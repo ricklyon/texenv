@@ -32,24 +32,26 @@ def parse_argument(stream):
             stream.seek(-1, os.SEEK_CUR)
             break
 
+        if arg_ch == '=':
+            key = argument.strip()
+            argument = ''
+
         mname = get_macro_name(stream)
+        
         if mname in imported_modules.keys():
 
             output = get_macro_content(stream, mname)
-            arg_ch += output
+            argument += output
 
         elif mname in defs:
             argument += defs[mname]
 
-        elif arg_ch == '=':
-            key = argument.strip()
-            argument = ''
+        elif mname:
+            argument += '\\' + mname
 
-        elif arg_ch != '}' and arg_ch != '{':
-            if mname:
-                argument += (arg_ch + '\\' + mname).strip()
-            else:
-                argument += arg_ch
+        elif arg_ch != '}' and arg_ch != '{' and arg_ch != '=':
+            argument += arg_ch
+
         
         arg_ch = stream.read(1).decode('utf-8')
 
