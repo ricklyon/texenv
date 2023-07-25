@@ -6,6 +6,7 @@ import os
 import subprocess
 import shutil
 import click
+import re
 
 class TeXPreprocessor(object):
     """"
@@ -195,8 +196,29 @@ class TeXPreprocessor(object):
 
         return method(*args, **kwargs)
 
+    def parse_pdflatex_error(self, output):
+        lines = output.split('\n')
+
+        error_msg = ''
+        error_ln = int
+        error_src = ''
+
+        for ln in lines:
+            if len(ln) and ln[0] == '!':
+                error_msg = ln[1:].strip()
+
+            m = re.match('^l.(\d+)', ln) 
+
+            if m:
+                error_ln = int(m.group(1))
+                error_src = ln[len(m.group(0)):].strip()
+                break
+
+        return dict(msg=error_msg, line=error_ln, src=error_src)
+
     def run(self, filepath):
-        infile = Path(filepath)
+        infile = Path(filepath).resolve()
+
         build_dir = Path(infile).parent / 'build'
 
         if not build_dir.is_dir():
@@ -271,18 +293,28 @@ class TeXPreprocessor(object):
         self._in_stream.close()
         self._out_stream.close()
 
-        out = subprocess.run("pdflatex --synctex=1 --output-directory=\"{}\" {}".format(build_dir, outfile), check=True)
+        proc = subprocess.run(
+            "pdflatex --synctex=1 --interaction=nonstopmode --halt-on-error --output-directory=\"{}\" {}".format(build_dir, outfile), stdout=subprocess.PIPE
+        )
+        
+        if proc.returncode:
+            err = self.parse_pdflatex_error(proc.stdout.decode('utf-8'))
+            raise RuntimeError(
+                "pdfTEX Error on line: {}. {} {}\n {}\n See full log at: {}".format(err['line'], err['msg'], err['src'], infile, build_dir / (infile.stem + '.log'))
+            )
+        
+        else:
+            gen_pdf = build_dir / (infile.stem + '.pdf')
+            gen_syn = build_dir / (infile.stem + '.synctex.gz')
 
-        gen_pdf = build_dir / (infile.stem + '.pdf')
-        gen_syn = build_dir / (infile.stem + '.synctex.gz')
+            out_pdf = infile.with_suffix('.pdf')
+            out_syn = infile.with_suffix('.synctex.gz')
 
-        out_pdf = infile.with_suffix('.pdf')
-        out_syn = infile.with_suffix('.synctex.gz')
+            shutil.copyfile(gen_pdf, out_pdf)
+            shutil.copyfile(gen_syn, out_syn)
 
-        shutil.copyfile(gen_pdf, out_pdf)
-        shutil.copyfile(gen_syn, out_syn)
-
-        return out
+        print('Output PDF written to {}'.format(out_pdf))
+        return proc
 
     # out = subprocess.run("\"C:/Program Files/SumatraPDF/SumatraPDF-3.4.6-64.exe\" \"{}\" -inverse-search \"\"C:/ProgramData/Notepad++/notepad++.exe\" -n%l \"%f\"\"".format(out_pdf), shell=True)
 
@@ -296,5 +328,8 @@ if __name__ == '__main__':
     
     # cli()
     texpp = TeXPreprocessor()
-    texpp.run(Path(__file__).parent / 'test.tex')
+    out = texpp.run(Path(__file__).parent / 'test.tex')
+
     
+
+
