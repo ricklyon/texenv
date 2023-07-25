@@ -328,7 +328,7 @@ if __name__ == '__main__':
     
     # cli()
     texpp = TeXPreprocessor()
-    out = texpp.run(Path(__file__).parent / 'test.tex')
+    out = texpp.run(Path(__file__).parent / '../tests/test.tex')
 
     
 
