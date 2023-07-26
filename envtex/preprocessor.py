@@ -183,13 +183,8 @@ class TeXPreprocessor(object):
         if method_name is None:
             raise ValueError('expected method name after imported module')
         
-        if module == 'pymacros':
-            lib = importlib.__import__('pytex')
-            module = getattr(lib, module)
-            method = getattr(module, method_name)
-        else:
-            lib = importlib.__import__(module)
-            method = getattr(lib, method_name)
+        lib = importlib.__import__(module)
+        method = getattr(lib, method_name)
 
         # get macro arguments
         args, kwargs = self.parse_macro_args()

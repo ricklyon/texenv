@@ -1,5 +1,3 @@
-from pathlib import Path
-
 
 def ieeeformat(fontsize='10', mode='technote', top=0.6, bottom=0.4, left=0.7, right=0.7):
 

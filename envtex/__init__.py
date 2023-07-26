@@ -1,2 +1,2 @@
 from . preprocessor import cli
-from . import pymacros
+from . macros import *

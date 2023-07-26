@@ -1,0 +1,33 @@
+[build-system]
+requires      = ["setuptools>=61.0.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "envtex"
+version = "0.0.1"
+description = "latex inside a python virtual environment"
+readme = "README.md"
+authors = [{ name = "Rick Lyon", email = "rlyon14@gmail.com" }]
+license = { file = "LICENSE" }
+classifiers = [
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+]
+keywords = ["latex", "tex", "environment"]
+dependencies = [
+    "click"
+]
+requires-python = ">=3.7"
+
+[project.optional-dependencies]
+dev = ["black", "flake8", "pytest"]
+
+[tool.setuptools.packages.find]
+include = ["envtex"]
+
+[project.scripts]
+envtex = "envtex:cli"
+
+[project.urls]
+repository = "https://github.com/ricklyon/envtex"
