@@ -27,7 +27,7 @@ dev = ["black", "flake8", "pytest"]
 include = ["texenv"]
 
 [project.scripts]
-envtex = "texenv:cli"
+texenv = "texenv:cli"
 
 [project.urls]
 repository = "https://github.com/ricklyon/texenv"
