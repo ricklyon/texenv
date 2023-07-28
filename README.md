@@ -1,11 +1,11 @@
-# envtex
+# texenv
 
 Compile LaTeX documents inside a virtual environment and call Python methods from LaTeX code.
 
 ## Installation
 
 ```bash
-pip install envtex
+pip install texenv
 ```
 
 ## Usage
@@ -14,7 +14,7 @@ example.tex
 ```tex
 \documentclass{article}
 
-\import\envtex as \pym
+\import\texenv as \pym
 \pydef\test true
 
 \begin{document}
@@ -24,7 +24,7 @@ example.tex
 	Hello world!!\ \
 \end{document}
 ```
-envtex method:
+texenv method:
 ```python
 def simple(arg1, arg2='default'):
     return str(arg1) + str(arg2)
@@ -32,9 +32,9 @@ def simple(arg1, arg2='default'):
 
 Compile on command line inside virtual environment:
 ```bash
-envtex example.tex
+texenv example.tex
 ```
 
 ## License
 
-envtex is licensed under the MIT License.
+texenv is licensed under the MIT License.
