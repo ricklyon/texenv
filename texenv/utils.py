@@ -40,36 +40,23 @@ def tlpdb_parse(pdb_path):
                     ln = f.readline()
 
     pkg_files = {}
-    runlisting = False
-    binlisting = False
+    curlisting = ''
     for k, v in pkg_listings.items():
         pkg_files[k] = {}
-        pkg_files[k]['runfile'] = []
-        pkg_files[k]['binfile'] = []
+        pkg_files[k]['runfiles'] = []
+        pkg_files[k]['binfiles'] = []
+        pkg_files[k]['srcfiles'] = []
         for ln in v.split('\n'):
-            if ln[:7] == 'runfile':
-                runlisting = True
-                binlisting = False
+            if ln[:8] in ['runfiles', 'binfiles', 'srcfiles']:
+                curlisting = ln[:8]
                 continue
-            elif ln[:7] == 'binfile':
-                binlisting = True
-                runlisting = False
-                continue
-            elif len(ln) and ln[0] != ' ':
-                runlisting = False
-                binlisting = False
+            elif not len(ln) or ln[0] != ' ':
+                curlisting = ''
                 continue
 
-            if runlisting and len(ln):
-                pkg_files[k]['runfile'].append(ln.strip())
-            elif binlisting and len(ln):
-                pkg_files[k]['binfile'].append(ln.strip())
+            if curlisting and len(ln):
+                pkg_files[k][curlisting].append(ln.strip())
 
     return pkg_listings, pkg_files
 
-        
 
-
-
-
-                

@@ -5,7 +5,7 @@ import re
 import shutil
 import utils
 
-cwd = Path.cwd()
+cwd = Path(r'C:\Users\rlyon\texenv\texenv')#Path.cwd()
 prompt = 'test'
 
 # create python virtual environment
@@ -29,8 +29,10 @@ install_pkgs = [
     'bibtex.windows',
     'cm',
     'collection-basic',
+    'collection-wintools',
     'colorprofiles',
     'dehyph',
+    'dviout.windows',
     'dvipdfmx',
     'dvipdfmx.windows',
     'dvips',
@@ -83,20 +85,21 @@ install_pkgs = [
     'tlshell',
     'tlshell.windows',
     'unicode-data',
+    'wintools.windows',
     'xdvi'
-]
+ ]
 
 pdb_home = texpath / 'tlpkg/texlive.tlpdb'
 pdb_dest = newtexpath / 'tlpkg/texlive.tlpdb'
 
 pkg_listings, pkg_files = utils.tlpdb_parse(pdb_home)
 
-for k,v in pkg_files.items():
+for k,vv in pkg_files.items():
     if k in install_pkgs:
-        for v in v['runfile']:
+        for v in vv['runfiles']:
             os.makedirs((newtexpath / v).parent, exist_ok=True)
             shutil.copy(texpath / v, newtexpath / v)
-        for v in v['binfile']:
+        for v in vv['binfiles']:
             os.makedirs((newtexpath / v).parent, exist_ok=True)
             shutil.copy(texpath / v, newtexpath / v)
 
@@ -105,9 +108,9 @@ with open(pdb_dest, 'w+') as f:
         if k in install_pkgs:
             f.write(f'name {k}\n'+ v + '\n')
 
-pdb_path = texpath / 'tlpkg/texlive.tlpdb'
-
 shutil.copy(texpath / 'texmf-dist/ls-R', newtexpath / 'texmf-dist/ls-R')
+
+shutil.copytree(texpath / 'texmf-var', newtexpath / 'texmf-var')
 
 # modify activation scripts to add the new texpath to beginning of PATH so it's found before the base install
 with open(cwd / '.venv/Scripts/activate.bat', 'a') as f:
