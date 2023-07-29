@@ -4,9 +4,11 @@ import os
 import re
 import shutil
 import utils
+import sys
+import packages
 
-cwd = Path(r'C:\Users\rlyon\texenv\texenv')#Path.cwd()
-prompt = 'test'
+cwd = Path.cwd()
+prompt = sys.argv[1] if len(sys.argv) > 0 else '.venv'
 
 # create python virtual environment
 proc = subprocess.run(
@@ -20,93 +22,26 @@ texpath = utils.get_texpath()
 # copy tex binaries to venv folder
 newtexpath = cwd / '.venv/tex'
 
-# index packages in the database file that are required for texlive to run
-install_pkgs = [
-    '00texlive.config',
-    '00texlive.installation',
-    'amsfonts',
-    'bibtex',
-    'bibtex.windows',
-    'cm',
-    'collection-basic',
-    'collection-wintools',
-    'colorprofiles',
-    'dehyph',
-    'dviout.windows',
-    'dvipdfmx',
-    'dvipdfmx.windows',
-    'dvips',
-    'dvips.windows',
-    'ec',
-    'enctex',
-    'etex',
-    'etex-pkg',
-    'glyphlist',
-    'graphics-def',
-    'hyph-utf8',
-    'hyphen-base',
-    'hyphenex',
-    'ifplatform',
-    'iftex',
-    'knuth-lib',
-    'knuth-local',
-    'kpathsea',
-    'kpathsea.windows',
-    'lua-alt-getopt',
-    'luahbtex',
-    'luahbtex.windows',
-    'luatex',
-    'luatex.windows',
-    'makeindex',
-    'makeindex.windows',
-    'metafont',
-    'metafont.windows',
-    'mflogo',
-    'mfware',
-    'mfware.windows',
-    'modes',
-    'pdftex',
-    'pdftex.windows',
-    'plain',
-    'scheme-infraonly',
-    'scheme-minimal',
-    'tex',
-    'tex-ini-files',
-    'tex.windows',
-    'texlive-common',
-    'texlive-en',
-    'texlive-msg-translations',
-    'texlive-scripts',
-    'texlive-scripts.windows',
-    'texlive.infra',
-    'texlive.infra.windows',
-    'tlgs.windows',
-    'tlperl.windows',
-    'tlshell',
-    'tlshell.windows',
-    'unicode-data',
-    'wintools.windows',
-    'xdvi'
- ]
-
 pdb_home = texpath / 'tlpkg/texlive.tlpdb'
 pdb_dest = newtexpath / 'tlpkg/texlive.tlpdb'
 
 pkg_listings, pkg_files = utils.tlpdb_parse(pdb_home)
 
-for k,vv in pkg_files.items():
-    if k in install_pkgs:
-        for v in vv['runfiles']:
-            os.makedirs((newtexpath / v).parent, exist_ok=True)
-            shutil.copy(texpath / v, newtexpath / v)
-        for v in vv['binfiles']:
-            os.makedirs((newtexpath / v).parent, exist_ok=True)
-            shutil.copy(texpath / v, newtexpath / v)
+# install packages
+for k in packages.install_pkgs:
+    if k not in pkg_files:
+        raise RuntimeError(f'package {k} not found in base TeXLive installation. Ensure the "basic" TeXLive scheme is installed.')
+    
+    for v in pkg_files[k]['runfiles']:
+        os.makedirs((newtexpath / v).parent, exist_ok=True)
+        shutil.copy(texpath / v, newtexpath / v)
+    for v in pkg_files[k]['binfiles']:
+        os.makedirs((newtexpath / v).parent, exist_ok=True)
+        shutil.copy(texpath / v, newtexpath / v)
 
 with open(pdb_dest, 'w+') as f:
-    for k, v in pkg_listings.items():
-        if k in install_pkgs:
-            f.write(f'name {k}\n'+ v + '\n')
+    for k in packages.install_pkgs:
+        f.write(f'name {k}\n'+ pkg_listings[k] + '\n')
 
 shutil.copy(texpath / 'texmf-dist/ls-R', newtexpath / 'texmf-dist/ls-R')
 
