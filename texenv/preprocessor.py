@@ -8,6 +8,7 @@ import shutil
 import click
 import re
 
+
 class TeXPreprocessor(object):
     """"
     Searches a .tex file for all macro calls that are defined in Python and replaces it with the 
@@ -22,6 +23,8 @@ class TeXPreprocessor(object):
         self._out_stream = None
         self._imported_modules = {}
         self._defined_macros = {}
+        # add current directory to path so processor can manually import modules 
+        sys.path.append(str(Path.cwd()).replace('\\', r'\\'))
 
     def advance(self, n:int=1):
         """Returns the next n characters in the input stream and advances the current position."""
@@ -59,8 +62,11 @@ class TeXPreprocessor(object):
                 break
 
             if arg_ch == '=':
-                key = argument.strip()
-                argument = ''
+                if nested_bracket <=0:
+                    key = argument.strip()
+                    argument = ''
+                else:
+                    argument += arg_ch
 
             mname = self.get_macro_name()
             
@@ -73,7 +79,7 @@ class TeXPreprocessor(object):
                 argument += self._defined_macros[mname]
 
             elif mname:
-                argument += '\\' + mname
+                argument += arg_ch + '\\' + mname
 
             elif arg_ch != '}' and arg_ch != '{' and arg_ch != '=':
                 argument += arg_ch
@@ -96,9 +102,10 @@ class TeXPreprocessor(object):
         # return if no enclosing bracket around arguments
         if m_ch != '[':
             return args, kwargs
-        
+
         # get macro arguments
         key, arg = self.parse_argument()
+
         if key is None:
             args.append(arg)
         else:
@@ -153,9 +160,13 @@ class TeXPreprocessor(object):
 
         name = ''
         n_ch = self.advance()
-        while n_ch.isalpha():
+        while n_ch.isalpha() or n_ch.isnumeric():
             name += n_ch
             n_ch = self.advance()
+
+        # if name not in tuple(self._imported_modules.keys()) + tuple(self._defined_macros.keys()) + ('pydef', 'import'):
+        #     self.rewind(len(name) + 1)
+        #     return None
 
         if len(n_ch):
             self.rewind()
