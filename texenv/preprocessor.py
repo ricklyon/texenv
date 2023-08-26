@@ -81,7 +81,7 @@ class TeXPreprocessor(object):
             elif mname:
                 argument += arg_ch + '\\' + mname
 
-            elif arg_ch != '}' and arg_ch != '{' and arg_ch != '=':
+            elif arg_ch != '=':
                 argument += arg_ch
 
             arg_ch = self.advance()
@@ -160,7 +160,7 @@ class TeXPreprocessor(object):
 
         name = ''
         n_ch = self.advance()
-        while n_ch.isalpha() or n_ch.isnumeric():
+        while n_ch not in ['\\', '{', '}', ']', '['] and not n_ch.isspace():
             name += n_ch
             n_ch = self.advance()
 
