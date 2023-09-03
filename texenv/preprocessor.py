@@ -65,23 +65,24 @@ class TeXPreprocessor(object):
                 if nested_bracket <=0:
                     key = argument.strip()
                     argument = ''
-                else:
-                    argument += arg_ch
+                    arg_ch = ''
+                # else:
+                #     argument += arg_ch
 
             mname = self.get_macro_name()
             
             if mname in self._imported_modules.keys():
 
                 output = self.get_macro_content(mname)
-                argument += output
+                argument += arg_ch + output
 
             elif mname in self._defined_macros.keys():
-                argument += self._defined_macros[mname]
+                argument += arg_ch + self._defined_macros[mname]
 
             elif mname:
                 argument += arg_ch + '\\' + mname
 
-            elif arg_ch != '=':
+            else:
                 argument += arg_ch
 
             arg_ch = self.advance()
