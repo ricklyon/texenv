@@ -22,6 +22,7 @@ install_pkgs = [
     'enctex',
     'etex',
     'etex-pkg',
+    'epstopdf-pkg',
     'everyshi',
     'firstaid',
     'glyphlist',
