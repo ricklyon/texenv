@@ -36,7 +36,7 @@ pkg_listings, pkg_files = utils.tlpdb_parse(pdb_home)
 # install packages
 for k in packages.install_pkgs:
     if k not in pkg_files:
-        raise RuntimeError(f'package {k} not found in base TeXLive installation. Ensure the "basic" TeXLive scheme is installed.')
+        raise RuntimeError(f'package {k} not found in base TeXLive installation. Ensure at least the "basic" TeXLive scheme is installed.')
     
     for v in pkg_files[k]['runfiles']:
         os.makedirs((newtexpath / v).parent, exist_ok=True)

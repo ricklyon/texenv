@@ -79,7 +79,7 @@ class TeXPreprocessor(object):
             elif mname in self._defined_macros.keys():
                 argument += arg_ch + self._defined_macros[mname]
 
-            elif mname:
+            elif mname is not None:
                 argument += arg_ch + '\\' + mname
 
             else:
