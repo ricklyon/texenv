@@ -8,6 +8,7 @@ import shutil
 import click
 import re
 from typing import Callable, Union, List
+from io import StringIO
 
 class TeXPreprocessor(object):
     """ "
@@ -53,23 +54,32 @@ class TeXPreprocessor(object):
         self._input_line_num = 1
         self._output_line_num = 1
 
-    def advance(self):
+    def syntax_error(self, msg: str):
+        raise SyntaxError("Error on line {}. {}".format(self._input_line_num, msg))
+    
+    def advance(self, stream=None):
         """Returns the next character in the input stream and advances the current position in the stream."""
-        ch = self._in_stream.read(1).decode("utf-8")
-        if ch == "\n":
+        if stream is None:
+            stream = self._in_stream
+
+        ch = stream.read(1).decode("utf-8")
+        if ch == "\n" and stream == self._in_stream:
             self._input_line_num += 1
         return ch
 
-    def advance_if(self, condition: Callable):
+    def advance_if(self, condition: Callable, stream = None):
         """
         Returns the next character in the input stream if condition returns True. Otherwise, returns None and
         does not advance the stream.
         """
-        ch = self._in_stream.read(1).decode("utf-8")
+        if stream is None:
+            stream = self._in_stream
+        
+        ch = stream.read(1).decode("utf-8")
 
         if condition(ch):
             # if condition is met, advance the line number if character was new line and return character
-            if ch == "\n":
+            if ch == "\n" and stream == self._in_stream:
                 self._input_line_num += 1
             return ch
 
@@ -77,42 +87,45 @@ class TeXPreprocessor(object):
             # if condition is not met, revert the stream back to the previous character. The only exception is if the
             # stream reached the end of the file, in which case the character will be the empty string
             if len(ch):
-                self._in_stream.seek(-1, os.SEEK_CUR)
+                stream.seek(-1, os.SEEK_CUR)
             return None
 
-    def advance_until(self, condition: Callable):
+    def advance_until(self, condition: Callable, stream = None):
         """
         Returns the next characters in the input stream up until the condition returns True.
         """
 
-        ch = self._in_stream.read(1).decode("utf-8")
+        if stream is None:
+            stream = self._in_stream
+
+        ch = stream.read(1).decode("utf-8")
         read_str = ""
         while condition(ch):
             read_str += ch
-            ch = self._in_stream.read(1).decode("utf-8")
+            ch = stream.read(1).decode("utf-8")
 
         # the current character does not meet the condition, so rewind the stream so this character is the next one that is read.
         if len(ch):
-            self._in_stream.seek(-1, os.SEEK_CUR)
+            stream.seek(-1, os.SEEK_CUR)
 
         return read_str
 
-    def peek(self, n: int = 1):
+    def peek(self, n: int = 1, stream=None):
         """Returns the next n characters in the input stream without advancing the current position."""
-        n_ch = self._in_stream.read(n).decode("utf-8")
-        self._in_stream.seek(-n, os.SEEK_CUR)
+        if stream is None:
+            stream = self._in_stream
+
+        n_ch = stream.read(n).decode("utf-8")
+        stream.seek(-n, os.SEEK_CUR)
         return n_ch
 
     def write(self, data: str):
         """Write decoded data to the working output file."""
         self._out_stream.write(data.encode())
 
-    def syntax_error(self, msg: str):
-        raise SyntaxError("Error on line {}. {}".format(self._input_line_num, msg))
-
     def skip_whitespace(self, allow_break=False):
         """
-        Moves the input stream cursor to the first non-whitespace character.
+        Moves the default input stream cursor to the first non-whitespace character.
         """
 
         if allow_break:
@@ -129,19 +142,19 @@ class TeXPreprocessor(object):
 
         return skipped_str
 
-    def read_macro_name(self):
+    def read_macro_name(self, stream=None):
         """
         Reads the alpha-numeric characters after a backslash. Stream must be immediately after the backslash.
         """
         name = ""
-        n_ch = self.advance_if(lambda x: x.isalnum() or x == "_")
+        n_ch = self.advance_if(lambda x: x.isalnum() or x == "_", stream)
         while n_ch:
             name += n_ch
-            n_ch = self.advance_if(lambda x: x.isalnum() or x == "_")
+            n_ch = self.advance_if(lambda x: x.isalnum() or x == "_", stream)
 
         return name
 
-    def call_pymacro(self, module_name: str, method_name: str):
+    def call_pymacro(self, module_name: str, method_name: str, stream=None):
         """
         Reads the arguments for a pymacro, and returns the replacement text. Input stream should be
         immediately after the method name (at the [ or { character before the arguments).
@@ -150,42 +163,72 @@ class TeXPreprocessor(object):
         kwargs = {}
 
         # look for arguments enclosed with {}
-        while self.peek() == "{":
+        while self.peek(stream=stream) == "{":
             # leave off the first character which will be "{"
-            self.advance()
-            args += self.parse_until("}")
+            self.advance(stream)
+            args += self.parse_until("}", stream)
             # the cursor here is pointing at the delimiter, advance cursor so the next one we read is the character after "}".
-            self.advance()
+            self.advance(stream)
 
         # look for kwargs enclosed with []
-        if self.peek() == "[":
+        if self.peek(stream=stream) == "[":
             # leave off the first character which will be "["
-            self.advance()
+            self.advance(stream)
 
             while delimiter != "]":
                 # get string up until one of "]", "," or "="
-                content = self.parse_until(delimiter=["]", ",", "="])
+                content = self.parse_until(delimiter=["]", ",", "="], stream=stream)
 
                 # get the delimiter that stopped the parsing
-                delimiter = self.advance()
+                delimiter = self.advance(stream)
 
                 # if stopped by =, the previously read content is the key. Read the value after the = sign
                 if delimiter == "=":
-                    value = self.parse_until(delimiter=["]", ","])
+                    value = self.parse_until(delimiter=["]", ","], stream=stream)
                     kwargs[content] = value
-                    delimiter = self.advance()
-                # if stopped by a comma, save the content as a arg and continue to the next iteration
+                    delimiter = self.advance(stream)
+                # if stopped by a comma, save the content as an arg and continue to the next iteration
                 if delimiter == ",":
                     args += content
-                    
-        module = self._imported_modules[module_name]
 
+        # search and replace macros in all arguments and kwarg values. Create a flat list of all arguments and kwarg values.
+        value_list = list(args) + list(kwargs.values())
+        # iterate through each one and make the macro replacments
+        for i, value in enumerate(value_list):
+            v_replaced = ""
+            v_ch = " "
+            arg_stream = StringIO(value)
+
+            while len(v_ch):
+                # step through value looking for backslashes
+                v_ch = self.advance(arg_stream)
+
+                if v_ch == self.BACKSLASH:
+                    # get the name of the macro after the backslash
+                    mname = self.read_macro_name(stream)
+                    # if we found a macro, get the replacement text. This will return the backslash with the macro name if the macro
+                    # is not recognized.
+                    v_replaced += self.get_macro_replacement(mname, arg_stream)
+                else:
+                    v_replaced += v_ch
+
+            # update kwarg with replaced text
+            if i >= len(args):
+                key = list(kwargs.keys())[i - len(args)]
+                kwargs[key] = v_replaced
+            # update arg with replaced text
+            else:
+                args[i] = v_replaced    
+
+        # find the method pointer from the module and method name
+        module = self._imported_modules[module_name]
         lib = importlib.__import__(module)
         method = getattr(lib, method_name)
 
+        # call the method with the arguments and kwargs and return the result
         return method(*args, **kwargs)
     
-    def parse_until(self, delimiter: Union[str, List[str]]):
+    def parse_until(self, delimiter: Union[str, List[str]], stream=None):
         """
         Returns the content up to any characters contained in delimiter, while allowing the delimiters to be escaped by
         enclosing the content in brackets.
@@ -198,7 +241,7 @@ class TeXPreprocessor(object):
 
         while len(a_ch):
             
-            a_ch = self.peek()
+            a_ch = self.peek(stream=stream)
             if a_ch == "{":
                 nested_bracket += 1
             if a_ch == "}" and nested_bracket > 0:
@@ -207,32 +250,44 @@ class TeXPreprocessor(object):
             if a_ch in delimiter and nested_bracket == 0:
                 break
             else:
-                arg_str += self.advance()
+                arg_str += self.advance(stream)
 
         if nested_bracket:
             self.syntax_error("Missing closing bracket.")
 
         return arg_str
-    
-    def parse_pdflatex_error(self, output):
-        lines = output.split("\n")
 
-        error_msg = ""
-        error_ln = int
-        error_src = ""
+    def get_macro_replacement(self, mname, stream=None):
+        """
+        Returns the replacement text for the macro. Stream cursor must be immediately after the macro name.
+        """
 
-        for ln in lines:
-            if len(ln) and ln[0] == "!":
-                error_msg = ln[1:].strip()
+        if mname in self._imported_modules.keys():
+            # expect the method name immediately after the module or alias name, i.e. "\pkg\example_method"
+            bkslash = self.advance_if(lambda x: x == self.BACKSLASH, stream)
 
-            m = re.match("^l.(\d+)", ln)
+            if bkslash is None:
+                self.syntax_error(
+                    "Expected method name after python module: {}.".format(mname)
+                )
 
-            if m:
-                error_ln = int(m.group(1))
-                error_src = ln[len(m.group(0)) :].strip()
-                break
+            method_name = self.read_macro_name(stream)
 
-        return dict(msg=error_msg, line=error_ln, src=error_src)
+            if method_name is None:
+                self.syntax_error(
+                    "Expected method name after python module: {}.".format(mname)
+                )
+
+            # call the python method and get the replacement string
+            return self.call_pymacro(mname, method_name, stream)
+
+        elif mname in self._defined_macros.keys():
+            # get the replacement text in place of the defined macro
+            return self._imported_modules[mname]
+
+        else:
+            # preprocessor does not recognize the macro name
+            return "\\" + mname
 
     def run(self):
         self.reset()
@@ -279,7 +334,7 @@ class TeXPreprocessor(object):
                 # save the imported module name under the alias name. If no alias was given, the key name is the
                 # same as the module.
                 self._imported_modules[alias] = module
-
+        
             elif mname == "pydef":
                 # expect another macro call immediately after the \pydef call, i.e. \pydef\test
                 bkslash = self.advance_if(lambda x: x == self.BACKSLASH)
@@ -298,81 +353,11 @@ class TeXPreprocessor(object):
                     lambda x: x != self.NEWLINE
                 )
 
-            elif mname in self._imported_modules.keys():
-                # expect the method name immediately after the module or alias name, i.e. "\pkg\example_method"
-                bkslash = self.advance_if(lambda x: x == self.BACKSLASH)
-
-                if bkslash is None:
-                    self.syntax_error(
-                        "Expected method name after python module: {}.".format(mname)
-                    )
-
-                method_name = self.read_macro_name()
-
-                if method_name is None:
-                    self.syntax_error(
-                        "Expected method name after python module: {}.".format(mname)
-                    )
-
-                # call the python method and get the replacement string
-                output = self.call_pymacro(mname, method_name)
-                self.write(output)
-
-            elif mname in self._defined_macros.keys():
-                # write the replacement text in place of the defined macro
-                self.write(self._imported_modules[mname])
-
             else:
-                # preprocessor does not recognize the macro name, so just pass through to the output stream.
-                # include the backslash.
-                self.write("\\" + mname)
+                output = self.get_macro_replacement(mname)
+                self.write(output)
 
         self._in_stream.close()
         self._out_stream.close()
 
-        proc = subprocess.run(
-            'pdflatex --synctex=1 --interaction=nonstopmode --halt-on-error --output-directory="{}" {}'.format(
-                build_dir, outfile
-            ),
-            stdout=subprocess.PIPE,
-        )
 
-        if proc.returncode:
-            err = self.parse_pdflatex_error(proc.stdout.decode("utf-8"))
-            raise RuntimeError(
-                "pdfTEX Error on line: {}. {} {}\n {}\n See full log at: {}".format(
-                    err["line"],
-                    err["msg"],
-                    err["src"],
-                    infile,
-                    build_dir / (infile.stem + ".log"),
-                )
-            )
-
-        else:
-            gen_pdf = build_dir / (infile.stem + ".pdf")
-            gen_syn = build_dir / (infile.stem + ".synctex.gz")
-
-            out_pdf = infile.with_suffix(".pdf")
-            out_syn = infile.with_suffix(".synctex.gz")
-
-            shutil.copyfile(gen_pdf, out_pdf)
-            shutil.copyfile(gen_syn, out_syn)
-
-        print("Output PDF written to {}".format(out_pdf))
-        return proc
-
-    # out = subprocess.run("\"C:/Program Files/SumatraPDF/SumatraPDF-3.4.6-64.exe\" \"{}\" -inverse-search \"\"C:/ProgramData/Notepad++/notepad++.exe\" -n%l \"%f\"\"".format(out_pdf), shell=True)
-
-
-@click.command()
-@click.argument("filepath")
-def cli(filepath):
-    texpp = TeXPreprocessor()
-    texpp.run(filepath)
-
-
-if __name__ == "__main__":
-    # cli()
-    texpp = TeXPreprocessor()
-    out = texpp.run(Path(__file__).parent / "../tests/test.tex")
