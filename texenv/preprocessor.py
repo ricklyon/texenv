@@ -3,12 +3,9 @@ from time import time
 import sys
 import importlib
 import os
-import subprocess
-import shutil
-import click
-import re
 from typing import Callable, Union, List
 from io import StringIO
+import numpy as np
 
 class TeXPreprocessor(object):
     """ "
@@ -36,8 +33,7 @@ class TeXPreprocessor(object):
             os.mkdir(build_dir)
 
         self._outfile = build_dir / (self._infile.stem + ".tex")
-
-        self.reset()
+        self._syntex_map_path = build_dir / (self._infile.stem + ".syncmap")
 
         # add current directory to path so processor can manually import modules
         sys.path.append(str(Path.cwd()).replace("\\", r"\\"))
@@ -52,7 +48,17 @@ class TeXPreprocessor(object):
         self._defined_macros = {}
 
         self._input_line_num = 1
-        self._output_line_num = 1
+
+        self._syntex_map = []
+
+    def write(self, data: str):
+        """Write decoded data to the working output file."""
+        self._out_stream.write(data.encode())
+
+        # map the preprocessed line number back to the corresponding line in the original file
+        for i in range(data.count("\n")):
+            # the input has already seen the new line and incremented the line num, so use the last number
+            self._syntex_map.append(self._input_line_num - 1)
 
     def syntax_error(self, msg: str):
         raise SyntaxError("Error on line {}. {}".format(self._input_line_num, msg))
@@ -101,6 +107,8 @@ class TeXPreprocessor(object):
         ch = stream.read(1).decode("utf-8")
         read_str = ""
         while condition(ch):
+            if ch == "\n" and stream == self._in_stream:
+                self._input_line_num += 1
             read_str += ch
             ch = stream.read(1).decode("utf-8")
 
@@ -118,10 +126,6 @@ class TeXPreprocessor(object):
         n_ch = stream.read(n).decode("utf-8")
         stream.seek(-n, os.SEEK_CUR)
         return n_ch
-
-    def write(self, data: str):
-        """Write decoded data to the working output file."""
-        self._out_stream.write(data.encode())
 
     def skip_whitespace(self, allow_break=False):
         """
@@ -283,7 +287,7 @@ class TeXPreprocessor(object):
 
         elif mname in self._defined_macros.keys():
             # get the replacement text in place of the defined macro
-            return self._imported_modules[mname]
+            return self._defined_macros[mname]
 
         else:
             # preprocessor does not recognize the macro name
@@ -292,10 +296,11 @@ class TeXPreprocessor(object):
     def run(self):
         self.reset()
 
-        stime = time()
         g_ch = " "
         comment = False
         while len(g_ch):
+            g_ch = self.advance()
+
             if g_ch == self.COMMENT:
                 comment = True
 
@@ -304,7 +309,6 @@ class TeXPreprocessor(object):
 
             if comment or g_ch != self.BACKSLASH:
                 self.write(g_ch)
-                g_ch = self.advance()
                 continue
 
             # at this point, the current character is a backslash in a non-comment line.
@@ -351,7 +355,7 @@ class TeXPreprocessor(object):
                 # This string can be anything and is a direct replacement for every instance of "\pydef\test".
                 self._defined_macros[varname] = self.advance_until(
                     lambda x: x != self.NEWLINE
-                )
+                ).strip()
 
             else:
                 output = self.get_macro_replacement(mname)
@@ -359,5 +363,8 @@ class TeXPreprocessor(object):
 
         self._in_stream.close()
         self._out_stream.close()
-
+        
+        # add the last line to the mapping manually since there is no new line character on the last line to trigger the map write
+        self._syntex_map.append(self._input_line_num)
+        np.save(self._syntex_map_path, np.array(self._syntex_map))
 
