@@ -4,7 +4,7 @@ import sys
 import importlib
 import os
 from typing import Callable, Union, List
-from io import StringIO
+from io import BytesIO
 import numpy as np
 
 class TeXPreprocessor(object):
@@ -96,9 +96,9 @@ class TeXPreprocessor(object):
                 stream.seek(-1, os.SEEK_CUR)
             return None
 
-    def advance_until(self, condition: Callable, stream = None):
+    def advance_while(self, condition: Callable, stream = None):
         """
-        Returns the next characters in the input stream up until the condition returns True.
+        Returns the next characters in the input stream up until the condition returns False.
         """
 
         if stream is None:
@@ -170,7 +170,7 @@ class TeXPreprocessor(object):
         while self.peek(stream=stream) == "{":
             # leave off the first character which will be "{"
             self.advance(stream)
-            args += self.parse_until("}", stream)
+            args.append(self.parse_until("}", stream))
             # the cursor here is pointing at the delimiter, advance cursor so the next one we read is the character after "}".
             self.advance(stream)
 
@@ -179,7 +179,9 @@ class TeXPreprocessor(object):
             # leave off the first character which will be "["
             self.advance(stream)
 
-            while delimiter != "]":
+            delimiter = " "
+
+            while len(delimiter) and delimiter != "]":
                 # get string up until one of "]", "," or "="
                 content = self.parse_until(delimiter=["]", ",", "="], stream=stream)
 
@@ -189,11 +191,11 @@ class TeXPreprocessor(object):
                 # if stopped by =, the previously read content is the key. Read the value after the = sign
                 if delimiter == "=":
                     value = self.parse_until(delimiter=["]", ","], stream=stream)
-                    kwargs[content] = value
+                    kwargs[content.strip()] = value.strip()
                     delimiter = self.advance(stream)
                 # if stopped by a comma, save the content as an arg and continue to the next iteration
-                if delimiter == ",":
-                    args += content
+                if delimiter in [",", "]"]:
+                    args.append(content.strip())
 
         # search and replace macros in all arguments and kwarg values. Create a flat list of all arguments and kwarg values.
         value_list = list(args) + list(kwargs.values())
@@ -201,7 +203,7 @@ class TeXPreprocessor(object):
         for i, value in enumerate(value_list):
             v_replaced = ""
             v_ch = " "
-            arg_stream = StringIO(value)
+            arg_stream = BytesIO(value.encode('utf-8'))
 
             while len(v_ch):
                 # step through value looking for backslashes
@@ -209,9 +211,9 @@ class TeXPreprocessor(object):
 
                 if v_ch == self.BACKSLASH:
                     # get the name of the macro after the backslash
-                    mname = self.read_macro_name(stream)
-                    # if we found a macro, get the replacement text. This will return the backslash with the macro name if the macro
-                    # is not recognized.
+                    mname = self.read_macro_name(arg_stream)
+                    # if we found a macro, get the replacement text. This will return the backslash with the macro name if the 
+                    # macro is not recognized.
                     v_replaced += self.get_macro_replacement(mname, arg_stream)
                 else:
                     v_replaced += v_ch
@@ -332,7 +334,9 @@ class TeXPreprocessor(object):
                 alias = module
                 self.skip_whitespace()
                 if self.peek(2) == "as":
-                    self.skip_whitespace()
+                    self.advance_while(lambda x: x != "\\")
+                    # skip the backslash
+                    self.advance()
                     alias = self.read_macro_name()
 
                 # save the imported module name under the alias name. If no alias was given, the key name is the
@@ -353,7 +357,7 @@ class TeXPreprocessor(object):
 
                 # at this point we have read up to "\pydef\test". Now read the assignment string for this variable.
                 # This string can be anything and is a direct replacement for every instance of "\pydef\test".
-                self._defined_macros[varname] = self.advance_until(
+                self._defined_macros[varname] = self.advance_while(
                     lambda x: x != self.NEWLINE
                 ).strip()
 

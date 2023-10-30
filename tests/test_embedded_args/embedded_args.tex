@@ -1,0 +1,17 @@
+\documentclass{article}
+\author{Macro Arg Embedded Test} 
+
+\import\macros_1 as \pym
+
+\pydef\SIMPLEDEF simpledef
+\pydef\DEF_WITH_UNDER_SCORE def with spaces and =]{}
+
+\begin{document}
+
+	Test macro with embedded defs \pym\emb_args{\SIMPLEDEF arg1}{arg2} end
+	Test macro with embedded defs \pym\emb_args{arg1}{arg2 \DEF_WITH_UNDER_SCORE} end
+
+	Test macro with embedded macro \pym\emb_args{\pym\inside_macro[a, b]}{ARG2}end
+	Test macro with embedded macro \pym\emb_args[arg1, {\pym\inside_macro[a, b]}]\test
+
+\end{document}
