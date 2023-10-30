@@ -1,0 +1,23 @@
+\documentclass{article}
+\author{Macro Arg Test} 
+
+
+
+
+\begin{document}
+	Test macro with no args pym noargs \test end
+	Test macro with no args pym noargs \test\other
+	Test macro with only args ARG1|arg2 end
+	Test macro with only args ARG1|arg2\other
+
+	Test other syntax ARG1|arg2 end
+	Test other syntax ARG1|arg2\other
+
+	Test single args arg1 end
+
+	Test three args arg1|\arg2{e_arg, 1}|arg3 end
+	Test three args arg1, with, commas|arg2 \ \|\arg3{ \arg3[a=test, abc=test a]} end
+
+	Test escaped arg {ESCAPED, ARG1}|{escaped, arg2 \ arg2}
+	Test escaped arg {arg1} end
+\end{document}
