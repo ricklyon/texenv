@@ -193,8 +193,9 @@ class TeXPreprocessor(object):
                     value = self.parse_until(delimiter=["]", ","], stream=stream)
                     kwargs[content.strip()] = value.strip()
                     delimiter = self.advance(stream)
+                    print(kwargs)
                 # if stopped by a comma, save the content as an arg and continue to the next iteration
-                if delimiter in [",", "]"]:
+                elif delimiter in [",", "]"]:
                     args.append(content.strip())
 
         # search and replace macros in all arguments and kwarg values. Create a flat list of all arguments and kwarg values.
@@ -230,6 +231,7 @@ class TeXPreprocessor(object):
         module = self._imported_modules[module_name]
         lib = importlib.__import__(module)
         method = getattr(lib, method_name)
+        print(args, kwargs)
 
         # call the method with the arguments and kwargs and return the result
         return method(*args, **kwargs)
