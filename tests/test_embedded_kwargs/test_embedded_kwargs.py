@@ -4,7 +4,7 @@ from pathlib import Path
 import shutil
 from texenv import TeXPreprocessor
 
-class TestMacros(unittest.TestCase):
+class TestEmbeddedMacros(unittest.TestCase):
 
     def setUp(self) -> None:
         self.dir_ = Path(__file__).parent
@@ -13,9 +13,9 @@ class TestMacros(unittest.TestCase):
         if self.build_dir.exists():
             shutil.rmtree(self.build_dir)
 
-    # def tearDown(self) -> None:
-    #     if self.build_dir.exists():
-    #         shutil.rmtree(self.build_dir)
+    def tearDown(self) -> None:
+        if self.build_dir.exists():
+            shutil.rmtree(self.build_dir)
     
     def test_macro_args(self):
         """
@@ -23,16 +23,16 @@ class TestMacros(unittest.TestCase):
         """
         dir_ = Path(__file__).parent
 
-        filepath = dir_ / "macro_args.tex"
+        filepath = dir_ / "embedded_kwargs.tex"
         texpp = TeXPreprocessor(filepath)
         texpp.run()
 
-        pp_filepath = dir_ / "build/macro_args.tex"
+        pp_filepath = dir_ / "build/embedded_kwargs.tex"
 
         with open(pp_filepath) as pp_file:
             pp_text = pp_file.read()
 
-        pp_filepath = dir_ / "macro_arg_truth.tex"
+        pp_filepath = dir_ / "embedded_kwargs_truth.tex"
 
         with open(pp_filepath) as truth_file:
             truth_text = truth_file.read()
@@ -44,8 +44,8 @@ class TestMacros(unittest.TestCase):
         self.assertEqual(pp_text, truth_text)
 
         # lines in the output should map 1:1 back to the input
-        sync_pp = np.load(self.build_dir / "macro_args.syncmap.npy")
-        np.testing.assert_array_equal(sync_pp, np.arange(1, 24))
+        sync_pp = np.load(self.build_dir / "embedded_kwargs.syncmap.npy")
+        np.testing.assert_array_equal(sync_pp, np.arange(1, 19))
 
 if __name__ == '__main__':
     unittest.main()

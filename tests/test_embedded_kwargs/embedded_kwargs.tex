@@ -1,0 +1,18 @@
+\documentclass{article}
+\author{Macro Kwarg Test} 
+
+\import\macros_1 as \pym
+
+\pydef\SIMPLEDEF simpledef
+\pydef\DEF_WITH_UNDER_SCORE def with spaces and =]{}
+
+\begin{document}
+
+	Test embedded kwargs \pym\macro_kwargs{arg1}{arg2 begin \SIMPLEDEF end}[kw1=kw1 begin \SIMPLEDEF end] end
+	Test embedded kwargs \pym\macro_kwargs[\randommacro{}, arg2, kw1=\DEF_WITH_UNDER_SCORE] end
+	Test embedded kwargs \pym\macro_kwargs[arg1, \pym\emb_args[a a, b b], kw1=kw1-user, kw2={kw2=u,s,er}] end
+	Test embedded kwargs \pym\macro_kwargs[\pym\emb_args[a a, arg2=\test{}{}], arg2, kw1=\pym\emb_args[a a, b b]] end
+
+	Test two-level kwargs \pym\macro_kwargs[arg1 \ \ , arg2, kw1=\pym\emb_args[\pym\emb_args[a a, arg2=\test{}{}], b b]] end
+
+\end{document}

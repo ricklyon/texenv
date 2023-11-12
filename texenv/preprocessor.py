@@ -193,7 +193,6 @@ class TeXPreprocessor(object):
                     value = self.parse_until(delimiter=["]", ","], stream=stream)
                     kwargs[content.strip()] = value.strip()
                     delimiter = self.advance(stream)
-                    print(kwargs)
                 # if stopped by a comma, save the content as an arg and continue to the next iteration
                 elif delimiter in [",", "]"]:
                     args.append(content.strip())
@@ -231,7 +230,6 @@ class TeXPreprocessor(object):
         module = self._imported_modules[module_name]
         lib = importlib.__import__(module)
         method = getattr(lib, method_name)
-        print(args, kwargs)
 
         # call the method with the arguments and kwargs and return the result
         return method(*args, **kwargs)
@@ -244,23 +242,27 @@ class TeXPreprocessor(object):
 
         delimiter = [delimiter] if isinstance(delimiter, str) else delimiter
         nested_bracket = 0
+        nested_sq_bracket = 0
         arg_str = ''
         a_ch = ' '
 
         while len(a_ch):
-            
             a_ch = self.peek(stream=stream)
             if a_ch == "{":
                 nested_bracket += 1
-            if a_ch == "}" and nested_bracket > 0:
+            elif a_ch == "}" and nested_bracket > 0:
                 nested_bracket -= 1
-    
-            if a_ch in delimiter and nested_bracket == 0:
-                break
-            else:
-                arg_str += self.advance(stream)
+            elif a_ch == "[":
+                nested_sq_bracket += 1
+            elif a_ch == "]" and nested_sq_bracket > 0:
+                nested_sq_bracket -= 1
 
-        if nested_bracket:
+            elif a_ch in delimiter and (nested_bracket == 0 and nested_sq_bracket == 0):
+                break
+
+            arg_str += self.advance(stream)
+
+        if nested_bracket or nested_sq_bracket:
             self.syntax_error("Missing closing bracket.")
 
         return arg_str
