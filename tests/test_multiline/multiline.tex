@@ -1,0 +1,25 @@
+\documentclass{article}
+\author{Macro Kwarg Test} 
+
+\import\macros_1 as \pym
+
+\pydef\SIMPLEDEF simpledef
+\pydef\DEF_WITH_UNDER_SCORE def with spaces and =]{}
+
+\begin{document}
+
+	Test multiline marcro \pym\macro_kwargs[
+		\ \ arg1, arg2, kw2=\kwarg2{a}[b]
+		c end  
+	]
+
+	Test multiline macro 
+	\pym\macro_kwargs{arg1}[
+		arg2, kw1=\pym\emb_args[1, 2],
+		kw2=
+		\kwarg2{a}[b] 
+		\pym\emb_args[1, 2]
+		end
+	]
+
+\end{document}
