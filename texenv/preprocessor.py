@@ -6,6 +6,7 @@ import os
 from typing import Callable, Union, List
 from io import BytesIO
 import numpy as np
+import pickle
 
 class TeXPreprocessor(object):
     """ "
@@ -299,7 +300,7 @@ class TeXPreprocessor(object):
             # preprocessor does not recognize the macro name
             return "\\" + mname
 
-    def run(self):
+    def run(self) -> Path:
         self.reset()
 
         g_ch = " "
@@ -374,5 +375,10 @@ class TeXPreprocessor(object):
         
         # add the last line to the mapping manually since there is no new line character on the last line to trigger the map write
         self._syntex_map.append(self._input_line_num)
-        np.save(self._syntex_map_path, np.array(self._syntex_map))
+
+        with open(self._syntex_map_path, "wb") as f:
+            pickle.dump(self._syntex_map, f)
+        # np.save(self._syntex_map_path, np.array(self._syntex_map))
+
+        return self._outfile
 
