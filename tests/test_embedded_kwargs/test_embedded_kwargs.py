@@ -44,8 +44,7 @@ class TestEmbeddedMacros(unittest.TestCase):
         self.assertEqual(pp_text, truth_text)
 
         # lines in the output should map 1:1 back to the input
-        sync_pp = np.load(self.build_dir / "embedded_kwargs.syncmap.npy")
-        np.testing.assert_array_equal(sync_pp, np.arange(1, 19))
+        np.testing.assert_array_equal(texpp._syntex_map, np.arange(1, 19))
 
 if __name__ == '__main__':
     unittest.main()

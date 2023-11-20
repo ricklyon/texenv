@@ -42,13 +42,9 @@ class TestEmbeddedMacros(unittest.TestCase):
         # print()
         # print(truth_text)
         self.assertEqual(pp_text, truth_text)
-
-        # lines in the output should map 1:1 back to the input
-        sync_pp = np.load(self.build_dir / "multiline.syncmap.npy")
-        # print(np.arange(1, len(sync_pp)+1))
-        # print(sync_pp)
+        
         truth_line_map = np.array([ 1,  2,  3,  4,  5,  6,  7,  8,  9, 10,13, 14, 15, 16, 22, 22, 23, 24, 25])
-        np.testing.assert_array_equal(sync_pp, truth_line_map)
+        np.testing.assert_array_equal(texpp._syntex_map, truth_line_map)
 
 if __name__ == '__main__':
     unittest.main()

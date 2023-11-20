@@ -46,8 +46,7 @@ class TestPyDefs(unittest.TestCase):
         self.assertEqual(desired_output[:-1], pp_text)
 
         # pydefs can't have new lines, so lines should map one to one.
-        sync_pp = np.load(self.build_dir / "pydefs.syncmap.npy")
-        np.testing.assert_array_equal(sync_pp, np.arange(1, 12))
+        np.testing.assert_array_equal(texpp._syntex_map, np.arange(1, 12))
 
 
 

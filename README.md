@@ -10,7 +10,7 @@ pip install texenv
 
 ## Usage
 
-example.tex
+Contents of `example.tex`:
 ```tex
 \documentclass{article}
 
@@ -21,18 +21,38 @@ example.tex
    
    \pym\simple[argument1, arg2=\test]
    
-	Hello world!!\ \
 \end{document}
 ```
-texenv method:
+Contents of `pymacros.py`, located in the same directory as `example.tex`:
 ```python
-def simple(arg1, arg2='default'):
+def simple(arg1: str, arg2: str = 'default') -> str:
     return str(arg1) + str(arg2)
 ```
 
 Compile on command line inside virtual environment:
 ```bash
 texenv example.tex
+```
+
+## VSCode Setup
+
+`texenv` is designed to work with the Latex Workshop extension in VSCode. Once the extension is installed, the following
+settings should be added to the `settings.json` file:
+
+```json
+    "latex-workshop.latex.tools": [
+        {
+          "name": "texenv",
+          "command": "texenv",
+          "args": [
+            "%DOC_EXT%"
+          ],
+          "env": {
+            "Path": "%WORKSPACE_FOLDER%/.venv/tex/bin/windows;%WORKSPACE_FOLDER%/.venv/Scripts;%PATH%"
+          }
+        },
+    ],
+    "latex-workshop.view.pdf.internal.synctex.keybinding": "double-click"
 ```
 
 ## License
