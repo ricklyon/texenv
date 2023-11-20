@@ -1,0 +1,13 @@
+\documentclass{article}
+\author{Macro Kwarg Test} 
+
+\import\macros_1 as \pym
+
+\begin{document}
+
+	Test macro with kwargs \pym\macro_kwargs{arg1}{arg2}[kw1=kw1-user] end
+	Test macro with kwargs \pym\macro_kwargs[arg1, arg2, kw1=kw1-user] end
+	Test macro with kwargs \pym\macro_kwargs[arg1, arg2, kw1=kw1-user, kw2={kw2=u,s,er}] end
+	Test macro with kwargs \pym\macro_kwargs[arg1, arg2] end
+
+\end{document}

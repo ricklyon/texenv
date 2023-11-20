@@ -1,2 +1,2 @@
-from . preprocessor import cli
-from . macros import *
+from .preprocessor import TeXPreprocessor
+from .runner import cli

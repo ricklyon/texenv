@@ -1,0 +1,18 @@
+\documentclass{article}
+\author{Macro Kwarg Test} 
+
+
+
+
+
+
+\begin{document}
+
+	Test embedded kwargs arg1 + arg2 begin simpledef end KW: kw1 begin simpledef end + kw2-default end
+	Test embedded kwargs \randommacro{} + arg2 KW: def with spaces and =]{} + kw2-default end
+	Test embedded kwargs arg1 + a a|E|b b KW: kw1-user + {kw2=u,s,er} end
+	Test embedded kwargs a a|E|\test{}{} + arg2 KW: a a|E|b b + kw2-default end
+
+	Test two-level kwargs arg1 \ \ + arg2 KW: a a|E|\test{}{}|E|b b + kw2-default end
+
+\end{document}

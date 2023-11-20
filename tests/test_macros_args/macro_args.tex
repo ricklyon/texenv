@@ -1,0 +1,23 @@
+\documentclass{article}
+\author{Macro Arg Test} 
+
+\import\macros_1 as \pym
+\import\macros_2 as \pym2
+
+\begin{document}
+	Test macro with no args \pym\noargs end
+	Test macro with no args \pym\noargs\other
+	Test macro with only args \pym\only_args{arg1}{ARG2} end
+	Test macro with only args \pym\only_args{arg1}{ARG2}\other
+
+	Test other syntax \pym\only_args[arg1, ARG2] end
+	Test other syntax \pym\only_args[arg1, ARG2]\other
+
+	Test single args \pym2\one_arg{arg1} end
+
+	Test three args \pym2\three_args[arg1, \arg2{e_arg, 1}, arg3] end
+	Test three args \pym2\three_args{arg1, with, commas}{arg2 \ \}{\arg3{} \arg3[a=test, abc=test a]} end
+
+	Test escaped arg \pym\only_args[{escaped, arg1}, {escaped, arg2 \ arg2}]
+	Test escaped arg \pym2\one_arg[{arg1}] end
+\end{document}
