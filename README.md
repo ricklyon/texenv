@@ -14,7 +14,7 @@ Contents of `example.tex`:
 ```tex
 \documentclass{article}
 
-\import\texenv as \pym
+\import\pymacros as \pym
 \pydef\test true
 
 \begin{document}
