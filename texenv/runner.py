@@ -6,7 +6,7 @@ import re
 from pathlib import Path
 import os
 
-from texenv import TeXPreprocessor, utils
+from texenv import TeXPreprocessor, utils, packages
 
 
 @click.command()
@@ -18,13 +18,55 @@ def cli(command, filepath=None, prompt=None):
     if command == "init":
         utils.texenv_init(prompt)
         print('TeX environement setup complete. Please close this window and reactivate the environment for the changes to take effect.')
-        return 
     
     elif command == "freeze":
-        return 
+        proc = subprocess.run(
+            "tlmgr list --only-installed",
+            stdout=subprocess.PIPE,
+            shell=True
+        )
+
+        # parse list of installed packages
+        all_pkgs = [ln[2:ln.index(":")] for ln in proc.stdout.decode("utf-8").split('\n') if ':' in ln]
+        # filter all packages that are installed with texenv_init
+        pkgs = [pkg for pkg in all_pkgs if pkg not in packages.install_pkgs]
+
+        if filepath is not None:
+            filepath = Path(filepath).resolve()
+
+            with open(filepath, "w+") as f:
+                f.write('\n'.join(pkgs)) 
+
+        else:
+            click.echo('\n'.join(pkgs))
     
     elif command == "sync":
-        return 
+
+        if filepath is None:
+            click.echo('filepath argument required.')
+            return
+        
+        filepath = Path(filepath).resolve()
+
+        with open(filepath, "r") as f:
+            all_pkgs = f.read().split('\n')
+            # filter out base packages if they somehow made it onto the file
+            pkgs = [pkg.strip() for pkg in all_pkgs if pkg not in packages.install_pkgs]
+
+        with subprocess.Popen(
+            "tlmgr install " + ' '.join(pkgs),
+            shell=True,
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            bufsize=1,
+            universal_newlines=True,
+        ) as process:
+            for line in process.stdout:
+                click.echo(line)
+
+            output = process.communicate()[0]
+            # code = process.returncode
     
     elif command == "run":
         filepath = Path(filepath).resolve()
@@ -96,5 +138,5 @@ def cli(command, filepath=None, prompt=None):
 
             shutil.copyfile(gen_pdf, out_pdf)
 
-    print("Output PDF written to {}".format(out_pdf))
+        print("Output PDF written to {}".format(out_pdf))
     # out = subprocess.run("\"C:/Program Files/SumatraPDF/SumatraPDF-3.4.6-64.exe\" \"{}\" -inverse-search \"\"C:/ProgramData/Notepad++/notepad++.exe\" -n%l \"%f\"\"".format(out_pdf), shell=True)
