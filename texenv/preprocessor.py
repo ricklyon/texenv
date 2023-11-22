@@ -1,11 +1,9 @@
 from pathlib import Path
-from time import time
 import sys
 import importlib
 import os
 from typing import Callable, Union, List
 from io import BytesIO
-import numpy as np
 import pickle
 
 class TeXPreprocessor(object):

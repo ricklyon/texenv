@@ -2,7 +2,110 @@ import subprocess
 from pathlib import Path
 import os
 import re
+import shutil
+from . import packages
 
+def texenv_init(prompt = ".venv"):
+    """
+    Initializes the texenv environment and TeX installation.
+    """
+    # create python virtual environment if we aren't already in one
+    if "VIRTUAL_ENV" not in dict(os.environ).keys():
+        print(f"Creating virtual environment... ({prompt})")
+        cwd = Path.cwd()
+        proc = subprocess.run(
+            'python -m venv "{}\.venv" --prompt="{}"'.format(cwd, prompt),
+            stdout=subprocess.PIPE,
+        )
+        if proc.returncode:
+            raise RuntimeError(proc.stdout.decode("utf-8"))
+    else:
+        print(f"Found existing virtual environment at {os.environ['VIRTUAL_ENV']}")
+        
+    cwd = Path(os.environ['VIRTUAL_ENV'])
+
+    texpath = get_texpath()
+
+    # copy tex binaries to venv folder
+    newtexpath = cwd / "tex"
+
+    if newtexpath.exists():
+        raise RuntimeError(f"TeX installation already exists at {newtexpath}")
+
+    pdb_home = texpath / "tlpkg/texlive.tlpdb"
+    pdb_dest = newtexpath / "tlpkg/texlive.tlpdb"
+    
+    print(f"Setting up TeX environment...")
+    pkg_listings, pkg_files = tlpdb_parse(pdb_home)
+
+    # install packages
+    for k in packages.install_pkgs:
+        if k not in pkg_files:
+            raise RuntimeError(
+                f'package {k} not found in base TeXLive installation. Ensure at least the "basic" TeXLive scheme is installed on the system.'
+            )
+
+        for v in pkg_files[k]["runfiles"]:
+            os.makedirs((newtexpath / v).parent, exist_ok=True)
+            shutil.copy(texpath / v, newtexpath / v)
+        for v in pkg_files[k]["binfiles"]:
+            os.makedirs((newtexpath / v).parent, exist_ok=True)
+            shutil.copy(texpath / v, newtexpath / v)
+
+    with open(pdb_dest, "w+") as f:
+        for k in packages.install_pkgs:
+            f.write(f"name {k}\n" + pkg_listings[k] + "\n")
+
+    os.makedirs(newtexpath / 'tlpkg/backups', exist_ok=True)
+
+    shutil.copy(texpath / "texmf-dist/ls-R", newtexpath / "texmf-dist/ls-R")
+    shutil.copytree(texpath / "texmf-var", newtexpath / "texmf-var")
+
+    # modify activation scripts to add the new texpath to beginning of PATH so it's found before the base install
+    with open(cwd / "Scripts/activate.bat", "a") as f:
+        f.write("\nset PATH=%VIRTUAL_ENV%\\tex\\bin\\windows;%PATH%\n")
+
+    with open(cwd / "Scripts/activate", "a") as f:
+        f.write('\nPATH="$VIRTUAL_ENV/tex/bin/windows:$PATH"\nexport PATH')
+
+    # update powershell script, since we are modifiying it we need to remove the signature block first
+    script = ""
+    with open(cwd / "Scripts/Activate.ps1", "r") as f:
+        ln = 1
+        while ln:
+            ln = f.readline()
+            if ln.strip()[:7] == "# SIG #":
+                break
+            script += ln
+
+    with open(cwd / "Scripts/Activate.ps1", "w+") as f:
+        f.write(script)
+        f.write(
+            '\n$path = Join-Path $VenvDir "\\tex\\bin\windows"\n$Env:PATH = "$path$([System.IO.Path]::PathSeparator)$Env:PATH"'
+        )
+
+    # changing PATH within python will not affect the parent session
+    # subprocess.run(str(cwd / "Scripts/activate.bat"))
+
+def parse_pdflatex_error(output):
+    lines = output.split("\n")
+
+    error_msg = ""
+    error_ln = int
+    error_src = ""
+
+    for ln in lines:
+        if len(ln) and ln[0] == "!":
+            error_msg = ln[1:].strip()
+
+        m = re.match("^l.(\d+)", ln)
+
+        if m:
+            error_ln = int(m.group(1))
+            error_src = ln[len(m.group(0)) :].strip()
+            break
+
+    return dict(msg=error_msg, line=error_ln, src=error_src)
 
 def get_texpath():
     """
