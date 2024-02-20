@@ -12,7 +12,7 @@ dir_ = Path(__file__).parent
 
 
 class Presentation(object):
-    def __init__(self, filepath: str, fontsize=tuple((18, 20))):
+    def __init__(self, filepath: str, fontsize=tuple((18, 20)), template_path: Path = None):
         """
         Creates a powerpoint PDF using LaTeX. Requires pdflatex to be installed on the system with the following
         packages:
@@ -28,6 +28,8 @@ class Presentation(object):
             filepath of output PDF
         fontsize: tuple:
             2-tuple of the text font size and the line spacing, default is (18pt, 20pt)
+        template_path: Path, optional
+            path to a template .tex file
         """
         # width and height of the usuable content area of each slide, in inches
         self.width_in = 12
@@ -44,16 +46,18 @@ class Presentation(object):
         self.build_dir.mkdir(parents=True, exist_ok=True)
 
         # template file
-        with open(dir_ / "templates/default.tex") as template:
+        if template_path is None:
+            template_path = dir_ / "templates/default.tex"
+        with open(template_path) as template:
             self.data = template.read()
 
         # copy template images to build folder
-        template_path = str(dir_ / "templates").replace("\\", "/")
+        template_dir = str(template_path.parent).replace("\\", "/")
 
         # insert the graphics path for the template img into the document data
         self.data = self.data.replace(
             r"\begin{document}",
-            r"\graphicspath{{" + template_path + "}}\n\n\\begin{document}",
+            r"\graphicspath{{" + template_dir + "}}\n\n\\begin{document}",
         )
 
     def save(self, clean: bool = True):
@@ -88,6 +92,7 @@ class Presentation(object):
         else:
             # copy the generated PDF from the build directory to the specified path
             shutil.copyfile(self.build_dir / self.filepath.name, self.filepath)
+            print(f"Presentation saved to: {self.filepath}")
             if clean:
                 # remove the temporary directory
                 try:
@@ -226,7 +231,7 @@ class Presentation(object):
             # \begin{minipage}[b][height_in][v_align]{w_col}
             col_data += f"\n\\begin{{minipage}}[b][{height_in:.2f}in][{v_align}]{{{w_col:.2f}in}}"
 
-            h_rows = height_rows
+            h_rows = np.array(height_rows)
             # if only the first row has data, set the other rows to 0 height so the first item is centered
             # in the column
             if len(col) > 1 and np.all(col[1:] == None):
@@ -235,13 +240,17 @@ class Presentation(object):
 
             for j, item in enumerate(col):
                 row_data = ""
-                h_row = height_rows[j]
+                h_row = h_rows[j]
                 # center content vertically in the column unless the content is text
                 v_align = "t" if isinstance(item, str) else "c"
+
+                # skip rows with 0 height
+                if h_row <= 0:
+                    continue
+                
                 # create block for row inside the column block (subdivided heights).
                 # \begin{minipage}[b][h_row][v_align]{w_col}
-                if h_row > 0:
-                    row_data += f"\n\t\\begin{{minipage}}[b][{h_row:.2f}in][{v_align}]{{{w_col:.2f}in}}"
+                row_data += f"\n\t\\begin{{minipage}}[b][{h_row:.2f}in][{v_align}]{{{w_col:.2f}in}}"
 
                 if isinstance(item, str):
                     # if item is str, treat it as direct LaTeX content
@@ -249,8 +258,7 @@ class Presentation(object):
                     row_data += "\n" + text
                 else:
                     if item is None:
-                        if h_row > 0:
-                            row_data += "\n\t\end{minipage} \\\\ "
+                        row_data += "\n\t\end{minipage} \\\\ "
                         col_data += row_data
                         continue
 

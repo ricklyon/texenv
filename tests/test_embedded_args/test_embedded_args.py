@@ -11,11 +11,17 @@ class TestEmbeddedMacros(unittest.TestCase):
         self.build_dir = self.dir_ / "build"
 
         if self.build_dir.exists():
-            shutil.rmtree(self.build_dir)
+            try:
+                shutil.rmtree(self.build_dir)
+            except Exception:
+                pass
 
     def tearDown(self) -> None:
         if self.build_dir.exists():
-            shutil.rmtree(self.build_dir)
+            try:
+                shutil.rmtree(self.build_dir)
+            except Exception:
+                pass
     
     def test_macro_args(self):
         """
