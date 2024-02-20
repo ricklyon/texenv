@@ -3,9 +3,46 @@ from pathlib import Path
 import os
 import re
 import shutil
+from PIL import Image
 from . import packages
 
-def texenv_init(prompt = ".venv"):
+
+def normalize_dimensions(w, h):
+    """normalize the width and height so the largest dimension is 1."""
+    largest_dim = w if w > h else h
+    w_n = w / largest_dim
+    h_n = h / largest_dim
+
+    return w_n, h_n
+
+
+def get_image_size(filepath, normalize=False):
+    """
+    Return width and height of an image file.
+    """
+    img = Image.open(filepath)
+    w_im, h_im = img.size
+
+    if normalize:
+        # normalize the width and height so the largest dimension is 1.
+        w_im, h_im = normalize_dimensions(w_im, h_im)
+    return w_im, h_im
+
+
+def get_figure_size(fig, normalize=False):
+    """
+    Returns width and height of figure in inches.
+    """
+    w_im, h_im = fig.get_size_inches()
+
+    if normalize:
+        # normalize the width and height so the largest dimension is 1.
+        w_im, h_im = normalize_dimensions(w_im, h_im)
+
+    return w_im, h_im
+
+
+def texenv_init(prompt=".venv"):
     """
     Initializes the texenv environment and TeX installation.
     """
@@ -21,8 +58,8 @@ def texenv_init(prompt = ".venv"):
             raise RuntimeError(proc.stdout.decode("utf-8"))
     else:
         print(f"Found existing virtual environment at {os.environ['VIRTUAL_ENV']}")
-        
-    cwd = Path(os.environ['VIRTUAL_ENV'])
+
+    cwd = Path(os.environ["VIRTUAL_ENV"])
 
     texpath = get_texpath()
 
@@ -34,7 +71,7 @@ def texenv_init(prompt = ".venv"):
 
     pdb_home = texpath / "tlpkg/texlive.tlpdb"
     pdb_dest = newtexpath / "tlpkg/texlive.tlpdb"
-    
+
     print(f"Setting up TeX environment...")
     pkg_listings, pkg_files = tlpdb_parse(pdb_home)
 
@@ -56,7 +93,7 @@ def texenv_init(prompt = ".venv"):
         for k in packages.install_pkgs:
             f.write(f"name {k}\n" + pkg_listings[k] + "\n")
 
-    os.makedirs(newtexpath / 'tlpkg/backups', exist_ok=True)
+    os.makedirs(newtexpath / "tlpkg/backups", exist_ok=True)
 
     shutil.copy(texpath / "texmf-dist/ls-R", newtexpath / "texmf-dist/ls-R")
     shutil.copytree(texpath / "texmf-var", newtexpath / "texmf-var")
@@ -87,6 +124,7 @@ def texenv_init(prompt = ".venv"):
     # changing PATH within python will not affect the parent session
     # subprocess.run(str(cwd / "Scripts/activate.bat"))
 
+
 def parse_pdflatex_error(output):
     lines = output.split("\n")
 
@@ -106,6 +144,7 @@ def parse_pdflatex_error(output):
             break
 
     return dict(msg=error_msg, line=error_ln, src=error_src)
+
 
 def get_texpath():
     """
