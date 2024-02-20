@@ -293,7 +293,6 @@ class Presentation(object):
                 row_data += "\n\t\end{minipage}"
 
                 if j < (len(col) - 1) and not np.all(col[j + 1 :] == None):
-                    print(j, item)
                     row_data += " \\\\ "
 
                 col_data += row_data
