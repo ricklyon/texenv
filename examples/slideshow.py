@@ -41,4 +41,4 @@ pres.add_slide(
     width_ratio=(1, 1, 2)
 )
 
-pres.save(clean=False)
+pres.save()
