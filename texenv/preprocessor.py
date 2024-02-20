@@ -6,6 +6,7 @@ from typing import Callable, Union, List
 from io import BytesIO
 import pickle
 
+
 class TeXPreprocessor(object):
     """ "
     Searches a .tex file for all macro calls that are defined in Python and replaces it with the
@@ -61,7 +62,7 @@ class TeXPreprocessor(object):
 
     def syntax_error(self, msg: str):
         raise SyntaxError("Error on line {}. {}".format(self._input_line_num, msg))
-    
+
     def advance(self, stream=None):
         """Returns the next character in the input stream and advances the current position in the stream."""
         if stream is None:
@@ -72,14 +73,14 @@ class TeXPreprocessor(object):
             self._input_line_num += 1
         return ch
 
-    def advance_if(self, condition: Callable, stream = None):
+    def advance_if(self, condition: Callable, stream=None):
         """
         Returns the next character in the input stream if condition returns True. Otherwise, returns None and
         does not advance the stream.
         """
         if stream is None:
             stream = self._in_stream
-        
+
         ch = stream.read(1).decode("utf-8")
 
         if condition(ch):
@@ -95,7 +96,7 @@ class TeXPreprocessor(object):
                 stream.seek(-1, os.SEEK_CUR)
             return None
 
-    def advance_while(self, condition: Callable, stream = None):
+    def advance_while(self, condition: Callable, stream=None):
         """
         Returns the next characters in the input stream up until the condition returns False.
         """
@@ -202,7 +203,7 @@ class TeXPreprocessor(object):
         for i, value in enumerate(value_list):
             v_replaced = ""
             v_ch = " "
-            arg_stream = BytesIO(value.encode('utf-8'))
+            arg_stream = BytesIO(value.encode("utf-8"))
 
             while len(v_ch):
                 # step through value looking for backslashes
@@ -211,7 +212,7 @@ class TeXPreprocessor(object):
                 if v_ch == self.BACKSLASH:
                     # get the name of the macro after the backslash
                     mname = self.read_macro_name(arg_stream)
-                    # if we found a macro, get the replacement text. This will return the backslash with the macro name if the 
+                    # if we found a macro, get the replacement text. This will return the backslash with the macro name if the
                     # macro is not recognized.
                     v_replaced += self.get_macro_replacement(mname, arg_stream)
                 else:
@@ -223,7 +224,7 @@ class TeXPreprocessor(object):
                 kwargs[key] = v_replaced
             # update arg with replaced text
             else:
-                args[i] = v_replaced    
+                args[i] = v_replaced
 
         # find the method pointer from the module and method name
         module = self._imported_modules[module_name]
@@ -232,7 +233,7 @@ class TeXPreprocessor(object):
 
         # call the method with the arguments and kwargs and return the result
         return method(*args, **kwargs)
-    
+
     def parse_until(self, delimiter: Union[str, List[str]], stream=None):
         """
         Returns the content up to any characters contained in delimiter, while allowing the delimiters to be escaped by
@@ -242,8 +243,8 @@ class TeXPreprocessor(object):
         delimiter = [delimiter] if isinstance(delimiter, str) else delimiter
         nested_bracket = 0
         nested_sq_bracket = 0
-        arg_str = ''
-        a_ch = ' '
+        arg_str = ""
+        a_ch = " "
 
         while len(a_ch):
             a_ch = self.peek(stream=stream)
@@ -345,7 +346,7 @@ class TeXPreprocessor(object):
                 # save the imported module name under the alias name. If no alias was given, the key name is the
                 # same as the module.
                 self._imported_modules[alias] = module
-        
+
             elif mname == "pydef":
                 # expect another macro call immediately after the \pydef call, i.e. \pydef\test
                 bkslash = self.advance_if(lambda x: x == self.BACKSLASH)
@@ -370,7 +371,7 @@ class TeXPreprocessor(object):
 
         self._in_stream.close()
         self._out_stream.close()
-        
+
         # add the last line to the mapping manually since there is no new line character on the last line to trigger the map write
         self._syntex_map.append(self._input_line_num)
 
@@ -379,4 +380,3 @@ class TeXPreprocessor(object):
         # np.save(self._syntex_map_path, np.array(self._syntex_map))
 
         return self._outfile
-

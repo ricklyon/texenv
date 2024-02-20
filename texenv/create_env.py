@@ -7,6 +7,7 @@ import utils
 import sys
 import packages
 
+
 def create_env():
     cwd = Path.cwd()
     prompt = sys.argv[1] if len(sys.argv) > 2 else ".venv"
