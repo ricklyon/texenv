@@ -1,0 +1,29 @@
+\documentclass[14pt]{article}
+
+\usepackage{geometry}
+\usepackage{graphicx}
+\usepackage{fancyhdr}
+\usepackage{xcolor}
+
+\geometry{paperheight=7.5in, paperwidth=13in, top=1in, bottom=0.5in, left=0.2in, right=0.2in}
+
+\renewcommand{\familydefault}{\sfdefault}
+
+\fancypagestyle{slides}{%
+   \fancyhead{}
+
+   \rfoot{\textbf{\thepage}}
+   \cfoot{}
+
+   % horizontal lines underneath header
+   \renewcommand{\headrule}{\vspace{-0.15in}{\rule{\textwidth}{3pt}}}
+
+   \setlength{\topmargin}{-0.7in}
+   \setlength{\headsep}{0.6in}
+   \setlength{\footskip}{20pt}
+   \setlength{\textheight}{6in}
+}
+
+\begin{document}
+\pagestyle{slides}
+
