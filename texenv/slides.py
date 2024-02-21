@@ -12,7 +12,9 @@ dir_ = Path(__file__).parent
 
 
 class Presentation(object):
-    def __init__(self, filepath: str, fontsize=tuple((18, 20)), template_path: Path = None):
+    def __init__(
+        self, filepath: str, fontsize=tuple((18, 20)), template_path: Path = None
+    ):
         """
         Creates a powerpoint PDF using LaTeX. Requires pdflatex to be installed on the system with the following
         packages:
@@ -247,7 +249,7 @@ class Presentation(object):
                 # skip rows with 0 height
                 if h_row <= 0:
                     continue
-                
+
                 # create block for row inside the column block (subdivided heights).
                 # \begin{minipage}[b][h_row][v_align]{w_col}
                 row_data += f"\n\t\\begin{{minipage}}[b][{h_row:.2f}in][{v_align}]{{{w_col:.2f}in}}"
