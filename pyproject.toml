@@ -16,7 +16,7 @@ classifiers = [
 ]
 keywords = ["latex", "tex", "environment"]
 dependencies = [
-    "click", "pillow"
+    "click", "pillow", "numpy", "matplotlib"
 ]
 requires-python = ">=3.7"
 
