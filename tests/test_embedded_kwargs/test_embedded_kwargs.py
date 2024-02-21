@@ -4,8 +4,8 @@ from pathlib import Path
 import shutil
 from texenv import TeXPreprocessor
 
-class TestEmbeddedMacros(unittest.TestCase):
 
+class TestEmbeddedMacros(unittest.TestCase):
     def setUp(self) -> None:
         self.dir_ = Path(__file__).parent
         self.build_dir = self.dir_ / "build"
@@ -22,7 +22,7 @@ class TestEmbeddedMacros(unittest.TestCase):
                 shutil.rmtree(self.build_dir)
             except Exception:
                 pass
-    
+
     def test_macro_args(self):
         """
         Simple test with no python macro or pydefs.
@@ -52,5 +52,6 @@ class TestEmbeddedMacros(unittest.TestCase):
         # lines in the output should map 1:1 back to the input
         np.testing.assert_array_equal(texpp._syntex_map, np.arange(1, 19))
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     unittest.main()

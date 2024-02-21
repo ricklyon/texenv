@@ -4,8 +4,8 @@ from pathlib import Path
 import shutil
 from texenv import TeXPreprocessor
 
-class TestEmbeddedMacros(unittest.TestCase):
 
+class TestEmbeddedMacros(unittest.TestCase):
     def setUp(self) -> None:
         self.dir_ = Path(__file__).parent
         self.build_dir = self.dir_ / "build"
@@ -16,7 +16,7 @@ class TestEmbeddedMacros(unittest.TestCase):
     def tearDown(self) -> None:
         if self.build_dir.exists():
             shutil.rmtree(self.build_dir)
-    
+
     def test_macro_args(self):
         """
         Simple test with no python macro or pydefs.
@@ -42,6 +42,7 @@ class TestEmbeddedMacros(unittest.TestCase):
         # print()
         # print(truth_text)
         self.assertEqual(pp_text, truth_text)
-        
-if __name__ == '__main__':
+
+
+if __name__ == "__main__":
     unittest.main()

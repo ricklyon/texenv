@@ -4,8 +4,8 @@ from pathlib import Path
 import shutil
 from texenv import TeXPreprocessor
 
-class TestPyDefs(unittest.TestCase):
 
+class TestPyDefs(unittest.TestCase):
     def setUp(self) -> None:
         self.dir_ = Path(__file__).parent
         self.build_dir = self.dir_ / "build"
@@ -16,9 +16,8 @@ class TestPyDefs(unittest.TestCase):
     def tearDown(self) -> None:
         if self.build_dir.exists():
             shutil.rmtree(self.build_dir)
-    
-    def test_pydef(self):
 
+    def test_pydef(self):
         dir_ = Path(__file__).parent
 
         filepath = dir_ / "pydefs.tex"
@@ -41,7 +40,9 @@ class TestPyDefs(unittest.TestCase):
                 desired_output += "\n"
 
         desired_output = desired_output.replace(r"\SIMPLEDEF", "simpledef")
-        desired_output= desired_output.replace(r"\DEF_WITH_UNDER_SCORE", "def with spaces and =]{}")
+        desired_output = desired_output.replace(
+            r"\DEF_WITH_UNDER_SCORE", "def with spaces and =]{}"
+        )
 
         self.assertEqual(desired_output[:-1], pp_text)
 
@@ -49,6 +50,5 @@ class TestPyDefs(unittest.TestCase):
         np.testing.assert_array_equal(texpp._syntex_map, np.arange(1, 12))
 
 
-
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()
