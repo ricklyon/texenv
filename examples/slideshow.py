@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from texenv import Presentation
+from texenv import Presentation, datatable
 from pathlib import Path
 
 dir_ = Path(__file__).parent
@@ -24,17 +24,15 @@ text = r"""
 \item[] Bullet 2
 \item[--] Bullet 3 
 """
-text2 = r"""\[ \Delta t \le {1 \over  v_p \sqrt{ \Big({1 \over \Delta x} \Big)^2 + \Big({1 \over \Delta z}\Big)^2 }}\]
-"""
 
-pres.add_slide(
-    content=[[text, fig], [text2, None]], title="Example TeX Slides", width_ratio=(1, 2)
+data = np.arange(16).reshape((4, 4))
+
+table = datatable(
+    data, header_row=[f"Header {i}" for i in range(4)], formatter="{:.2f}"
 )
 
 pres.add_slide(
-    content=[[text, fig, fig2], [text2, None, fig]],
-    title="Example TeX Slides",
-    width_ratio=(1, 1, 2),
+    content=[[text, fig], [table, None]], title="Example TeX Slides", width_ratio=(1, 2)
 )
 
 pres.save()

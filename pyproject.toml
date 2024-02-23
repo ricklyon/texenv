@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "texenv"
-version = "0.0.6"
+version = "0.0.7"
 description = "latex inside a python virtual environment"
 readme = "README.md"
 authors = [{ name = "Rick Lyon", email = "rlyon14@gmail.com" }]

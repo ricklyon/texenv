@@ -11,6 +11,80 @@ from . import utils
 dir_ = Path(__file__).parent
 
 
+def datatable(
+    data: np.ndarray,
+    header_row: list = None,
+    header_column: list = None,
+    formatter="{}",
+    padding: int = 1.4,
+    header_color: str = "gray!30!white",
+    alignment: str = None,
+    fontsize=(12, 14),
+):
+    r"""
+    Returns LaTeX code for a simple table. The xcolor package must be imported into the template that calls
+    this macro:
+    \usepackage[table]{xcolor}
+
+    Parameters:
+    ----------
+    data: np.ndarray
+        1D or 2D array of data.
+    header_row: list
+        list of string values to place in first row of table. Length must match the number of data columns.
+    header_column: list
+        list of string values to place in the first column of table. Length must match the number of data rows.
+    formatter: str
+        string formatter used on each value in the data before placing into table.
+    header_color: str
+        xcolor string value, default is light gray.
+    alignment: str
+        tabular alignment string, i.e. c | p{1in} | c. Must match the number of columns.
+    fontsize: tuple, optional:
+        2-tuple of the text font size and the line spacing, default is (12pt, 14pt)
+
+    Returns:
+    --------
+    str:
+        LaTeX code for table.
+    """
+
+    data = np.atleast_2d(data)
+
+    header_color_s = r" \cellcolor{" + header_color + "} "
+
+    s = f"\\fontsize{{{fontsize[0]}}}{{{fontsize[1]:.1f}}}\\selectfont \n"
+    s += r"\centering \renewcommand{\arraystretch}{" + str(padding) + "}\n"
+    s += r"\setlength\arrayrulewidth{1.5pt}"
+
+    column_num = data.shape[1]
+    if header_column is not None:
+        column_num += 1
+
+    alignment_s = " ".join(["l|"] * column_num)[:-1] if alignment is None else alignment
+
+    s += "\n" + "\\begin{tabular}{|" + alignment_s + "|} \\hline  \n"
+
+    # place header row if provided
+    if header_row is not None:
+        # s += r"\rowcolor{" + header_color + r"} \hline" + "\n"
+        s += (
+            " & ".join(header_color_s + str(cell) for cell in header_row)
+            + " \\\\ \\hline \n "
+        )
+
+    for i, r in enumerate(data):
+        # insert column header at the first cell of each row
+        if header_column is not None:
+            s += r" \cellcolor{" + header_color + "} " + str(header_column[i]) + " & "
+
+        s += " & ".join(formatter.format(cell) for cell in r) + " \\\\ \\hline \n "
+
+    s += "\end{tabular}\n"
+
+    return s
+
+
 class Presentation(object):
     def __init__(
         self, filepath: str, fontsize=tuple((18, 20)), template_path: Path = None
@@ -28,7 +102,7 @@ class Presentation(object):
         -----------
         filepath: Path | str
             filepath of output PDF
-        fontsize: tuple:
+        fontsize: tuple, optional:
             2-tuple of the text font size and the line spacing, default is (18pt, 20pt)
         template_path: Path, optional
             path to a template .tex file
@@ -138,7 +212,7 @@ class Presentation(object):
             Supported content types are:
                 1. pathlib.Path objects to a image file
                 2. matplotlib Figure objects
-                3. string of text. This is treated as direct LaTeX code, supports math mode, text formatting ect...
+                3. string of text. This is treated as direct LaTeX code, supports math mode, text formatting etc...
                    Make sure to use raw strings (or r-strings) when using LaTeX macros or escape backslashes
                    with another backslash, i.e. use r"\textbf{Bolded Text}" or "\\textbf{Bolded Text}".
             The place of the content in the matrix determines it's position on the slide. For example,
@@ -275,7 +349,11 @@ class Presentation(object):
                         # if item is a mpl Figure, get the fig size and save to the build folder
                         w_im, h_im = utils.get_figure_size(item, normalize=True)
 
-                        item.tight_layout()
+                        try:
+                            item.tight_layout()
+                        except Exception:
+                            pass
+
                         item.savefig(slide_img_path / f"fig{fig_counter}.pdf")
                         relative_path = (
                             f"slide{self.slide_counter}/fig{fig_counter}.pdf"
