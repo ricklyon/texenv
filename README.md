@@ -1,6 +1,6 @@
 # texenv
 
-Creates lightweight TeX virtual environments and call Python methods directly from TeX code. 
+Create lightweight TeX virtual environments, and use Python methods directly from TeX code. 
 
 ## Installation
 
@@ -36,29 +36,45 @@ To synchronize the TeX installation with the packages found in a requirements fi
 ```bash
 texenv sync texrequirements.txt
 ```
-### Compiling 
 
-`.tex` files can be compiled in the environment using the standard tools (i.e `pdflatex`). `texenv` also supports a preprocessor that can be used to call Python methods directly from TeX code. The string returned by the Python method will be inserted into the document before compilation. 
-
-Writing TeX macros in Python is much more straight forward and more versatile than writing them in TeX. 
+`.tex` files can be compiled in the environment using the standard tools (i.e `pdflatex`). `texenv` also supports a preprocessor that can be used to call Python methods directly from TeX code. This is useful for generating figures and table data from python, or doing math that is difficult in LaTeX code. The example below shows a simple use case:
 
 Contents of `example.tex`:
 ```tex
 \documentclass{article}
 
-\import\pymacros_1 as \pym
-\pydef\test true
+% import a python module either installed in the environment, or just a file in the same folder as the .tex file.
+% In this case figures.py is in the same folder.
+\import\figures
+
+% preprocessor variables can be defined with \pydef followed by the variable name and value.
+\pydef\cleanfig true
 
 \begin{document}
-   
-   \pym\simple[argument1, arg2=\test]
+  
+  % call a python method. Supports arguments and kwargs, but all are passed in as string types. The return type of 
+  % the method must be a string as it is inserted directly into the TeX code.
+  \figures\figA[clean=\cleanfig, width=5in]
    
 \end{document}
 ```
-Contents of `pymacros_1.py`, located in the same directory as `example.tex`, or in a installed module named `pymacros_1`
+Contents of `figures.py`, located in the same directory as `example.tex`:
 ```python
-def simple(arg1: str, arg2: str = 'default') -> str:
-    return str(arg1) + '|' + str(arg2)
+from texenv.macros import figure
+import matplotlib.pyplot as plt
+
+def figA(clean="true", width="3in", **kwargs):
+    
+    if clean == "false":
+        return figure(file="figA.pdf", width=width, **kwargs)
+
+    fig, ax1 = plt.subplots(1, 1)
+    ax1.plot(range(11, 17))
+
+    fig.savefig("figA.pdf")
+
+    return figure(file="figA.pdf", width=width, **kwargs)
+
 ```
 
 Compile on command line inside virtual environment:
@@ -66,27 +82,68 @@ Compile on command line inside virtual environment:
 texenv run example.tex
 ```
 
+Full example:
+[examples/macro_example/macro_example.tex](examples/macro_example/macro_example.tex)
+
 The `run` command invokes the preprocessor, and then calls `pdflatex` on the post-processed `.tex` file. The synctex file is modified after running `pdflatex` so the intermediate file is transparent to synctex.
 
-Contents of post-processed `example.tex` (located in `build` folder):
-```tex
-\documentclass{article}
+## Slideshows
 
+`texenv` provides a simple way to generate PDF slideshow presentations directly from Python. Matplotlib figures, images, and LaTeX code (as strings in Python) can be assembled together into a slide using the `Presentation` class:
 
+```python
+from texenv import Presentation, datatable
 
-\begin{document}
-   
-   argument1|true
-   
-\end{document}
+... 
+
+# text to place on slide. This is interpreted as an enumerate list if \item appears first in the string.
+# Otherwise, the text is inserted directly as LaTeX code and supports math macros etc...
+text = r"""
+\item Bullet 1
+\item Bullet 2
+\[ \nabla \times \mathbf{E} = -\mu {\partial \mathbf{H} \over \partial t} \]
+\[ \nabla \times \mathbf{H} = \varepsilon {\partial \mathbf{E} \over \partial t} \]
+"""
+
+# create a table with header names, and a format string applied to each cell
+table = datatable(
+    np.arange(16).reshape((4, 4)), header_row=[f"Header {i}" for i in range(4)], formatter="{:.2f}"
+)
+
+pres = Presentation("example_slides.pdf")
+
+# add the content to the first slide. The layout will be a 2x2 grid, with the figure centered along both rows in the
+# second column. The text and table will split the first column. 
+pres.add_slide(
+    content=[[text, fig], 
+             [table, None]], 
+    title="Example TeX Slides", 
+    width_ratio=(1, 2) # make the second column twice as wide as the first column.
+)
+
+pres.save()
 ```
+
+![example2](https://raw.githubusercontent.com/ricklyon/texenv/main/docs/img/example_slide.png)
+
+Full example:
+[examples/slideshow/slideshow.py](examples/slideshow/slideshow.py)
+
 
 ## VSCode Setup
 
 `texenv` is designed to work with the Latex Workshop extension in VSCode. Once the extension is installed, the following
-settings should be added to the `settings.json` file:
+settings should be added to the user `settings.json` file:
 
 ```json
+    "latex-workshop.latex.recipes": [
+        {
+            "name": "texenv",
+            "tools": [
+                "texenv"
+            ]
+        }
+    ],
     "latex-workshop.latex.tools": [
         {
           "name": "texenv",
@@ -99,7 +156,8 @@ settings should be added to the `settings.json` file:
           }
         },
     ],
-    "latex-workshop.view.pdf.internal.synctex.keybinding": "double-click"
+    "latex-workshop.view.pdf.internal.synctex.keybinding": "double-click",
+    "latex-workshop.latex.autoBuild.run": "onSave",
 ```
 
 ## License
