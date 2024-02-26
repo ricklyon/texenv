@@ -8,9 +8,14 @@ def figure(
     twocolumn: str = False,
     placement: str = "h!",
     hspace: str = None,
+    caption_vspace: str = "0pt"
 ):
-    """
+    r"""
     Returns LaTeX code for a figure.
+
+    Requires:
+    ----------
+    \usepackage{graphicx}
 
     Parameters:
     ----------
@@ -26,16 +31,11 @@ def figure(
 
     if width is not None:
         s += "[width=" + width + "]"
-    s += "{" + file + "}\n"
+    s += "{" + file + "}"
 
     if caption is not None:
         s += (
-            r"\caption{\small{"
-            + caption
-            + r"}\label{fig:"
-            + file
-            + r"}\nopagebreak}"
-            + "\n"
+            r"\vspace{" + caption_vspace + r"}\caption{\small{" + caption + r"}\label{fig:" + file + r"}\nopagebreak}"
         )
     s += r"\end{" + figure_s + "}\n"
 
@@ -59,8 +59,10 @@ def table(
     floating: bool = False,
 ):
     r"""
-    Returns LaTeX code for a simple table. The xcolor package must be imported into any document that calls
-    this macro:
+    Returns LaTeX code for a simple table.
+
+    Requires:
+    ---------
     \usepackage[table]{xcolor}
 
     Parameters:

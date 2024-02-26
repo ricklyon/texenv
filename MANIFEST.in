@@ -1,1 +1,2 @@
 include texenv/templates/*.tex
+include texenv/pkg_files/*.txt

@@ -146,6 +146,9 @@ class Presentation(object):
             If true, remove the temporary build directory after a successful save.
             If save fails, the temporary directory is not removed, even if clean is True.
         """
+
+        plt.close("all")
+        
         texfilepath = self.build_dir / (self.filepath.stem + ".tex")
 
         with open(texfilepath, "w+") as output:

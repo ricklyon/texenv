@@ -20,7 +20,7 @@ def cli(command, filepath=None, prompt=None):
             "TeX environement setup complete. Please close this window and reactivate the environment for the changes to take effect."
         )
 
-    elif command == "freeze":
+    elif command == "freeze" or command == "list":
         proc = subprocess.run(
             "tlmgr list --only-installed", stdout=subprocess.PIPE, shell=True
         )
@@ -49,26 +49,7 @@ def cli(command, filepath=None, prompt=None):
             return
 
         filepath = Path(filepath).resolve()
-
-        with open(filepath, "r") as f:
-            all_pkgs = f.read().split("\n")
-            # filter out base packages if they somehow made it onto the file
-            pkgs = [pkg.strip() for pkg in all_pkgs if pkg not in packages.install_pkgs]
-
-        with subprocess.Popen(
-            "tlmgr install " + " ".join(pkgs),
-            shell=True,
-            stdin=subprocess.PIPE,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            bufsize=1,
-            universal_newlines=True,
-        ) as process:
-            for line in process.stdout:
-                click.echo(line)
-
-            output = process.communicate()[0]
-            # code = process.returncode
+        utils.sync_from_file(filepath)
 
     elif command == "run":
         filepath = Path(filepath).resolve()

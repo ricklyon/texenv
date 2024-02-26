@@ -1,0 +1,65 @@
+\documentclass{article}
+
+% includes for math symbols
+\usepackage{amsmath}
+\usepackage{amssymb}
+% required packages for the figure and table macros of texenv.
+% the docstring for each macro should list the required packages. 
+\usepackage[table]{xcolor}
+\usepackage{graphicx}
+
+% import the python modules. Installed packages (i.e. texenv) and modules in the same folder are visible.
+\import\figures
+\import\texenv
+
+% change the font style, and paragraph spacing
+\renewcommand{\familydefault}{\sfdefault}
+\raggedright
+\setlength{\parskip}{0.5em}
+\setlength{\parindent}{0pt}
+
+% global flag that determines if figures are generated from python (clean=True), or if cached files are used.
+\pydef\cleanfig True
+
+\begin{document}
+
+    % insert a table using the generic table macro from texenv
+    \texenv\table{
+        Setting         | Value 
+        ------------------------------
+        Frequency Range | 20 MHz -- 3 GHz
+        Sample points   | 1500
+        IF Bandwidth    | 300 kHz
+    }
+
+    Determine the coefficients \(h[n]\) of a linear phase FIR filter of length \(M = 15\) with symmetric frequency response:
+
+    \[
+        H_r\Big({2\pi k \over 15}\Big) =
+        \begin{cases}
+        1, & k \le 3 \\
+        0, &  4 \le k \le 7
+        \end{cases}
+    \]
+
+    % insert a python generated figure using the macro in the figures.py module
+    \figures\figA[clean=\cleanfig, width=5in, caption={Frequency response of linear phase filter.}, caption_vspace=-20pt]
+
+\end{document}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
