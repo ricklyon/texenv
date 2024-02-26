@@ -43,6 +43,9 @@ Contents of `example.tex`:
 ```tex
 \documentclass{article}
 
+% required package for inserting figures
+\usepackage{graphicx}
+
 % import a python module either installed in the environment, or just a file in the same folder as the .tex file.
 % In this case figures.py is in the same folder.
 \import\figures
