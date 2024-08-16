@@ -1,6 +1,7 @@
 amsmath
 auxhook
 carlisle
+cm-super
 colortbl
 etoolbox
 fancyhdr

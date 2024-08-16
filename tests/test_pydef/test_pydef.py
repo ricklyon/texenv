@@ -34,7 +34,7 @@ class TestPyDefs(unittest.TestCase):
 
         desired_output = ""
         for ln in in_text.split("\n"):
-            if "\pydef" not in ln:
+            if r"\pydef" not in ln:
                 desired_output += ln + "\n"
             else:
                 desired_output += "\n"

@@ -16,13 +16,14 @@ from texenv import TeXPreprocessor, utils, packages
 def cli(command, filepath=None, prompt=None):
     if command == "init":
         utils.texenv_init(prompt)
-        print(
-            "TeX environement setup complete. Please close this window and reactivate the environment for the changes to take effect."
-        )
+        print("TeX environement setup complete.")
 
     elif command == "freeze" or command == "list":
+
+        texpath = utils.get_env_texpath() / "tlmgr.bat"
+
         proc = subprocess.run(
-            "tlmgr list --only-installed", stdout=subprocess.PIPE, shell=True
+            f"{texpath} list --only-installed", stdout=subprocess.PIPE, shell=True
         )
 
         # parse list of installed packages
@@ -51,6 +52,26 @@ def cli(command, filepath=None, prompt=None):
         filepath = Path(filepath).resolve()
         utils.sync_from_file(filepath)
 
+    elif command == "install":
+        if filepath is None:
+            click.echo("package name argument required.")
+            return
+
+        texpath = utils.get_env_texpath() / "tlmgr.bat"
+
+        with subprocess.Popen(
+            f"{texpath} install " + filepath,
+            shell=True,
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            bufsize=1,
+            universal_newlines=True,
+        ) as process:
+
+            output = process.communicate()[0]
+        click.echo(output)
+
     elif command == "run":
         filepath = Path(filepath).resolve()
 
@@ -59,9 +80,11 @@ def cli(command, filepath=None, prompt=None):
 
         build_dir = outfile.parent
 
+        texpath = utils.get_env_texpath()
+
         proc = subprocess.run(
-            'pdflatex --synctex=1 --interaction=nonstopmode --halt-on-error --output-directory="{}" {}'.format(
-                build_dir, outfile
+            '{}//pdflatex.exe --synctex=1 --interaction=nonstopmode --halt-on-error --output-directory="{}" {}'.format(
+                texpath, build_dir, outfile
             ),
             stdout=subprocess.PIPE,
         )

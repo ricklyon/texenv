@@ -1,6 +1,7 @@
 import numpy as np
 from texenv.macros import figure
 
+
 def stem_plot(ax, xd, yd, color="teal", markersize=4, linestyle="solid", label=None):
     import matplotlib.pyplot as plt
 
@@ -24,17 +25,18 @@ def dtft(xn: np.ndarray, omega: np.ndarray):
 
     return Xw
 
+
 def figA(clean=False, width="3in", **kwargs):
-    
+
     if clean == "False":
         return figure(file="figA.pdf", width=width, **kwargs)
-    
+
     import matplotlib.pyplot as plt
     import numpy as np
     from pathlib import Path
 
-    plt.rc("xtick", labelsize='x-small')
-    plt.rc("ytick", labelsize='x-small')
+    plt.rc("xtick", labelsize="x-small")
+    plt.rc("ytick", labelsize="x-small")
 
     Hr_half = np.array([1, 1, 1, 1, 0, 0, 0, 0])
     Hr = np.concatenate([Hr_half, np.flip(Hr_half)[:-1]])

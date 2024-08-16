@@ -1,0 +1,9 @@
+/dist
+/.venv
+/archive
+/debug
+build
+__pycache__
+/texenv.egg-info
+*.gz
+archive

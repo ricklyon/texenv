@@ -118,7 +118,7 @@ class Presentation(object):
         self.title_voffset = 0.2
 
         # temporary directory for build files
-        self.build_dir = filepath.parent / (filepath.stem + "_build")
+        self.build_dir = self.filepath.parent / (self.filepath.stem + "_build")
         self.build_dir.mkdir(parents=True, exist_ok=True)
 
         # template file
@@ -128,7 +128,7 @@ class Presentation(object):
             self.data = template.read()
 
         # copy template images to build folder
-        template_dir = str(template_path.parent).replace("\\", "/")
+        template_dir = str(Path(template_path).parent).replace("\\", "/")
 
         # insert the graphics path for the template img into the document data
         self.data = self.data.replace(
@@ -148,7 +148,7 @@ class Presentation(object):
         """
 
         plt.close("all")
-        
+
         texfilepath = self.build_dir / (self.filepath.stem + ".tex")
 
         with open(texfilepath, "w+") as output:
@@ -156,18 +156,24 @@ class Presentation(object):
 
         # generate PDF by running pdflatex
         proc = subprocess.run(
-            'pdflatex --interaction=nonstopmode --halt-on-error --output-directory="{}" {}'.format(
-                self.build_dir, texfilepath
+            "pdflatex --interaction=nonstopmode --halt-on-error {}".format(
+                self.filepath.stem + ".tex"
             ),
             stdout=subprocess.PIPE,
+            cwd=self.build_dir,
         )
 
         if proc.returncode:
+            err = utils.parse_pdflatex_error(proc.stdout.decode("utf-8"))
             raise RuntimeError(
-                "pdflatex failed to compile document. Log file at {}".format(
-                    self.build_dir / (self.filepath.stem + ".log")
+                "pdfTEX Error on line: {}. {} {}\n See full log at: {}".format(
+                    err["line"],
+                    err["msg"],
+                    err["src"],
+                    self.build_dir / (self.filepath.stem + ".log"),
                 )
             )
+
         else:
             # copy the generated PDF from the build directory to the specified path
             shutil.copyfile(self.build_dir / self.filepath.name, self.filepath)

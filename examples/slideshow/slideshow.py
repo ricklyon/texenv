@@ -32,16 +32,17 @@ text = r"""
 
 # create a table with header names, and a format string applied to each cell
 table = datatable(
-    np.arange(16).reshape((4, 4)), header_row=[f"Header {i}" for i in range(4)], formatter="{:.2f}"
+    np.arange(16).reshape((4, 4)),
+    header_row=[f"Header {i}" for i in range(4)],
+    formatter="{:.2f}",
 )
 
 # add the content to the first slide. The layout will be a 2x2 grid, with the figure centered along both rows in the
-# second column. The text and table will split the first column. 
+# second column. The text and table will split the first column.
 pres.add_slide(
-    content=[[text, fig], 
-             [table, None]], 
-    title="Example TeX Slides", 
-    width_ratio=(1, 2) # make the second column twice as wide as the first column.
+    content=[[text, fig], [table, None]],
+    title="Example TeX Slides",
+    width_ratio=(1, 2),  # make the second column twice as wide as the first column.
 )
 
 pres.save()

@@ -8,7 +8,7 @@ def figure(
     twocolumn: str = False,
     placement: str = "h!",
     hspace: str = None,
-    caption_vspace: str = "0pt"
+    caption_vspace: str = "0pt",
 ):
     r"""
     Returns LaTeX code for a figure.
@@ -35,7 +35,13 @@ def figure(
 
     if caption is not None:
         s += (
-            r"\vspace{" + caption_vspace + r"}\caption{\small{" + caption + r"}\label{fig:" + file + r"}\nopagebreak}"
+            r"\vspace{"
+            + caption_vspace
+            + r"}\caption{\small{"
+            + caption
+            + r"}\label{fig:"
+            + file
+            + r"}\nopagebreak}"
         )
     s += r"\end{" + figure_s + "}\n"
 

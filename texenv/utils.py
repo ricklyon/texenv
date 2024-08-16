@@ -20,13 +20,16 @@ def get_image_size(filepath, normalize=False):
     """
     Return width and height of an image file.
     """
-    img = Image.open(filepath)
-    w_im, h_im = img.size
+    try:
+        img = Image.open(filepath)
+        w_im, h_im = img.size
 
-    if normalize:
-        # normalize the width and height so the largest dimension is 1.
-        w_im, h_im = normalize_dimensions(w_im, h_im)
-    return w_im, h_im
+        if normalize:
+            # normalize the width and height so the largest dimension is 1.
+            w_im, h_im = normalize_dimensions(w_im, h_im)
+        return w_im, h_im
+    except Exception:
+        return (1, 1)
 
 
 def get_figure_size(fig, normalize=False):
@@ -41,17 +44,20 @@ def get_figure_size(fig, normalize=False):
 
     return w_im, h_im
 
+
 def sync_from_file(filepath):
-    
+
     with open(filepath, "r") as f:
         all_pkgs = f.read().split("\n")
         # filter out base packages if they somehow made it onto the file
         pkgs = [pkg.strip() for pkg in all_pkgs if pkg not in packages.install_pkgs]
 
     if "VIRTUAL_ENV" not in dict(os.environ).keys():
-        raise RuntimeError("This command must be run from a virtual environment. To create one use: python -m venv .venv")
-    
-    texpath = Path(os.environ["VIRTUAL_ENV"]) / "tex/bin/windows/tlmgr.bat"
+        raise RuntimeError(
+            "This command must be run from a virtual environment. To create one use: python -m venv .venv"
+        )
+
+    texpath = get_env_texpath() / "tlmgr.bat"
 
     with subprocess.Popen(
         f"{texpath} install " + " ".join(pkgs),
@@ -67,31 +73,35 @@ def sync_from_file(filepath):
 
     return output
 
+
 def texenv_init(prompt=".venv"):
     """
     Initializes the texenv environment and TeX installation.
     """
     # create python virtual environment if we aren't already in one
     if "VIRTUAL_ENV" not in dict(os.environ).keys():
-        raise RuntimeError("This command must be run from a virtual environment. To create one use: python -m venv .venv")
+        raise RuntimeError(
+            "This command must be run from a virtual environment. To create one use: python -m venv .venv"
+        )
     else:
         print(f"Found existing virtual environment at {os.environ['VIRTUAL_ENV']}")
 
     cwd = Path(os.environ["VIRTUAL_ENV"])
 
-    texpath = get_texpath()
+    texpath = get_base_texpath()
 
-    # copy tex binaries to venv folderpip 
+    # copy tex binaries to venv folderpip
     newtexpath = cwd / "tex"
 
     if newtexpath.exists():
         # prompt to overwrite existing venv Tex installation
-        response = input(f"TeX installation already exists at {newtexpath}. Overwrite [y/n]?")
+        response = input(
+            f"TeX installation already exists at {newtexpath}. Overwrite [y/n]?"
+        )
         if response == "y":
             shutil.rmtree(newtexpath, ignore_errors=True)
         else:
             raise RuntimeError(f"TeX installation already exists at {newtexpath}")
-
 
     pdb_home = texpath / "tlpkg/texlive.tlpdb"
     pdb_dest = newtexpath / "tlpkg/texlive.tlpdb"
@@ -122,51 +132,16 @@ def texenv_init(prompt=".venv"):
     shutil.copy(texpath / "texmf-dist/ls-R", newtexpath / "texmf-dist/ls-R")
     shutil.copytree(texpath / "texmf-var", newtexpath / "texmf-var")
 
-    # save a clean unmodified copy of the activation scripts. If a clean copy is already present, overwrite the
-    # existing scripts with the clean version (without previous texenv modifications).
-    try:
-        if (cwd / "Scripts/activate_texenv.bat").exists():
-            shutil.copy(cwd / "Scripts/activate_texenv.bat", cwd / "Scripts/activate.bat")
-            shutil.copy(cwd / "Scripts/activate_texenv", cwd / "Scripts/activate")
-            shutil.copy(cwd / "Scripts/Activate_texenv.ps1", cwd / "Scripts/Activate.ps1")
-        else:
-            shutil.copy(cwd / "Scripts/activate.bat", cwd / "Scripts/activate_texenv.bat")
-            shutil.copy(cwd / "Scripts/activate", cwd / "Scripts/activate_texenv")
-            shutil.copy(cwd / "Scripts/Activate.bat", cwd / "Scripts/Activate_texenv.ps1")
-    except Exception:
-        pass
-
-    # modify activation scripts to add the new texpath to beginning of PATH so it's found before the base install
-    with open(cwd / "Scripts/activate.bat", "a") as f:
-        f.write("\nset PATH=%VIRTUAL_ENV%\\tex\\bin\\windows;%PATH%\n")
-
-    with open(cwd / "Scripts/activate", "a") as f:
-        f.write('\nPATH="$VIRTUAL_ENV/tex/bin/windows:$PATH"\nexport PATH')
-
-    # update powershell script, since we are modifiying it we need to remove the signature block first
-    script = ""
-    with open(cwd / "Scripts/Activate.ps1", "r") as f:
-        ln = 1
-        while ln:
-            ln = f.readline()
-            if ln.strip()[:7] == "# SIG #":
-                break
-            script += ln
-
-    with open(cwd / "Scripts/Activate.ps1", "w+") as f:
-        f.write(script)
-        f.write(
-            '\n$path = Join-Path $VenvDir "\\tex\\bin\windows"\n$Env:PATH = "$path$([System.IO.Path]::PathSeparator)$Env:PATH"'
-        )
-
     # update tlmgr inside the environment
     print(f"Updating TexLive package manager (tlmgr)...")
-    subprocess.run(f"{newtexpath}\\bin\windows\\tlmgr.bat update --self", stdout=subprocess.PIPE)
+    subprocess.run(
+        f"{newtexpath}\\bin\\windows\\tlmgr.bat update --self", stdout=subprocess.PIPE
+    )
 
     print("Installing packages from pkg_files/slides.txt...")
     slide_file = Path(__file__).parent / "pkg_files/slides.txt"
     sync_from_file(slide_file)
-    
+
     # changing PATH within python will not affect the parent session
     # subprocess.run(str(cwd / "Scripts/activate.bat"))
 
@@ -182,7 +157,7 @@ def parse_pdflatex_error(output):
         if len(ln) and ln[0] == "!":
             error_msg += ln[1:].strip() + "\n"
 
-        m = re.match("^l.(\d+)", ln)
+        m = re.match(r"^l.(\d+)", ln)
 
         if m:
             error_ln = int(m.group(1))
@@ -192,7 +167,7 @@ def parse_pdflatex_error(output):
     return dict(msg=error_msg, line=error_ln, src=error_src)
 
 
-def get_texpath():
+def get_base_texpath():
     """
     Returns the TeXLive installation directory on windows
     """
@@ -210,14 +185,18 @@ def get_texpath():
     return texpath
 
 
-def tlpdb_parse(pdb_path):
+def get_env_texpath():
+    return Path(os.environ["VIRTUAL_ENV"]) / r"tex/bin/windows"
+
+
+def tlpdb_parse(pdb_path: Path):
     """
     Parses the TexLive Package Database file and returns the
     paths to the bin and run files associated with each package.
     """
     pkg_listings = {}
 
-    with open(pdb_path, "r") as f:
+    with open(pdb_path, "r", encoding="utf-8") as f:
         ln = 1
         while ln:
             ln = f.readline()
