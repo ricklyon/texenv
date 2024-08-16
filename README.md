@@ -5,10 +5,15 @@ Create lightweight TeX virtual environments, and use Python methods directly fro
 ## Installation
 
 `texenv` is currently only supported on Windows, and requires `texlive` to be installed on the system.  
-https://tug.org/texlive/windows.html#install
+https://tug.org/texlive/windows.html#install  
+Ensure at least the "basic" TeXLive scheme is selected during installation.
 
+`texenv` requires an existing Python virtual environment, create one with the following command,
+```bash
+python -m venv .venv
+```
 
-Install `texenv` inside an existing Python virtual environment,
+Install `texenv` inside a Python virtual environment,
 
 ```bash
 pip install texenv
@@ -22,9 +27,9 @@ This installs a bare-bones version of LaTeX in `.venv/tex` and modifies the envi
 
 ## Usage
 
-The TeX environment supports the standard `tlmgr` tool which can be used to install and update packages as normal.
+To install packages into the TeX environment,
 ```bash
-tlmgr install <package name>
+texenv install <package name>
 ```
 
 To write all currently installed TeX packages in the environment to a file (excluding core packages required for LaTeX to run),
@@ -37,7 +42,12 @@ To synchronize the TeX installation with the packages found in a requirements fi
 texenv sync texrequirements.txt
 ```
 
-`.tex` files can be compiled in the environment using the standard tools (i.e `pdflatex`). `texenv` also supports a preprocessor that can be used to call Python methods directly from TeX code. This is useful for generating figures and table data from python, or doing math that is difficult in LaTeX code. The example below shows a simple use case:
+To compile a .tex file with pdflatex:
+```bash
+texenv run <.tex filepath>
+```
+
+`texenv` provides a preprocessor that can be used to call Python methods directly from TeX code. This is useful for generating figures and tables in python, or writing complicated macros that are difficult in LaTeX. The example below shows a simple use case:
 
 Contents of `example.tex`:
 ```tex
@@ -80,7 +90,8 @@ def figA(clean="true", width="3in", **kwargs):
 
 ```
 
-Compile on command line inside virtual environment:
+The `run` command invokes the preprocessor, and then calls `pdflatex` on the post-processed `.tex` file. The synctex file is modified after running `pdflatex` so the intermediate file is transparent to synctex.
+
 ```bash
 texenv run example.tex
 ```
@@ -88,11 +99,9 @@ texenv run example.tex
 Full example:
 [examples/macro_example/macro_example.tex](examples/macro_example/macro_example.tex)
 
-The `run` command invokes the preprocessor, and then calls `pdflatex` on the post-processed `.tex` file. The synctex file is modified after running `pdflatex` so the intermediate file is transparent to synctex.
-
 ## Slideshows
 
-`texenv` provides a simple way to generate PDF slideshow presentations directly from Python. Matplotlib figures, images, and LaTeX code (as strings in Python) can be assembled together into a slide using the `Presentation` class:
+`texenv` provides a simple way to generate PDF slideshow presentations directly from Python. Matplotlib figures, images, and LaTeX code can be assembled together into a slide using the `Presentation` class:
 
 ```python
 from texenv import Presentation, datatable
@@ -135,29 +144,33 @@ Full example:
 
 ## VSCode Setup
 
-`texenv` is designed to work with the Latex Workshop extension in VSCode. Once the extension is installed, the following
-settings should be added to the user `settings.json` file:
+`texenv` is designed to work with the Latex Workshop extension in VSCode. The following settings in `settings.json` should configure `texenv` to run on .tex files when they are saved. Note that this feature only works when VSCode is opened as a workspace.
 
 ```json
+    "[latex]": {
+        "editor.formatOnSave": false,
+    },
     "latex-workshop.latex.recipes": [
         {
-            "name": "texenv",
-            "tools": [
-                "texenv"
-            ]
-        }
+        "name": "texenv",
+        "tools": [
+            "texenv"
+        ]
+        },
     ],
     "latex-workshop.latex.tools": [
         {
-          "name": "texenv",
-          "command": "texenv",
-          "args": [
-            "run", "%DOC_EXT%"
-          ],
-          "env": {
-            "Path": "%WORKSPACE_FOLDER%/.venv/tex/bin/windows;%WORKSPACE_FOLDER%/.venv/Scripts;%PATH%"
-          }
-        },
+        "name": "texenv",
+        "command": "texenv",
+        "args": [
+            "run",
+            "%DOC_EXT%"
+        ],
+        "env": {
+            "Path": "%WORKSPACE_FOLDER%/.venv/tex/bin/windows;%WORKSPACE_FOLDER%/.venv/Scripts;%PATH%",
+            "VIRTUAL_ENV": "%WORKSPACE_FOLDER%/.venv"
+        }
+        }
     ],
     "latex-workshop.view.pdf.internal.synctex.keybinding": "double-click",
     "latex-workshop.latex.autoBuild.run": "onSave",
@@ -165,4 +178,4 @@ settings should be added to the user `settings.json` file:
 
 ## License
 
-texenv is licensed under the MIT License.
+`texenv` is licensed under the MIT License.

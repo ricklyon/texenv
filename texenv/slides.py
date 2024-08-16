@@ -154,10 +154,12 @@ class Presentation(object):
         with open(texfilepath, "w+") as output:
             output.write(self.data + "\n\\end{document}")
 
+        texpath = utils.get_env_texpath()
+
         # generate PDF by running pdflatex
         proc = subprocess.run(
-            "pdflatex --interaction=nonstopmode --halt-on-error {}".format(
-                self.filepath.stem + ".tex"
+            "{}//pdflatex.exe --interaction=nonstopmode --halt-on-error {}".format(
+                texpath, self.filepath.stem + ".tex"
             ),
             stdout=subprocess.PIPE,
             cwd=self.build_dir,

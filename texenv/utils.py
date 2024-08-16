@@ -90,7 +90,9 @@ def texenv_init(prompt=".venv"):
 
     texpath = get_base_texpath()
 
-    # copy tex binaries to venv folderpip
+    print(f"Found system TeXLive installation at: {texpath}")
+
+    # copy tex binaries to venv folder
     newtexpath = cwd / "tex"
 
     if newtexpath.exists():
@@ -113,7 +115,7 @@ def texenv_init(prompt=".venv"):
     for k in packages.install_pkgs:
         if k not in pkg_files:
             raise RuntimeError(
-                f'package {k} not found in base TeXLive installation. Ensure at least the "small" TeXLive scheme is installed on the system.'
+                f'package {k} not found in base TeXLive installation. Ensure at least the "basic" TeXLive scheme is installed on the system.'
             )
 
         for v in pkg_files[k]["runfiles"]:
@@ -173,14 +175,17 @@ def get_base_texpath():
     """
     path = os.environ["PATH"]
 
-    texpath = [
-        p for p in path.split(";") if re.match(r".*texlive\\\d+\\bin\\windows", p)
-    ]
+    texlive_ptn = r".*texlive\\(\d+)\\bin\\windows"
+
+    texpath = [p for p in path.split(";") if re.match(texlive_ptn, p)]
+
+    # texlive installations are sorted by year, get the most recent install
+    texpath = sorted(texpath, key=lambda x: re.match(texlive_ptn, x).group(1))[-1]
 
     if not len(texpath):
-        raise RuntimeError("texlive installation not found!")
+        raise RuntimeError("TeXLive installation not found!")
     else:
-        texpath = (Path(texpath[0]) / "../../").resolve()
+        texpath = (Path(texpath) / "../../").resolve()
 
     return texpath
 
