@@ -147,9 +147,9 @@ def table(
     s += table_s
 
     if floating:
-        s += "\end{tabular}\n\end{center}\n\end{table}\n"
+        s += "\\end{tabular}\n\\end{center}\n\\end{table}\n"
     else:
-        s += "\end{tabular}\n\end{center}\n"
+        s += "\\end{tabular}\n\\end{center}\n"
 
     return s.strip()
 

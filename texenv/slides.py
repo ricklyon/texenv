@@ -80,7 +80,7 @@ def datatable(
 
         s += " & ".join(formatter.format(cell) for cell in r) + " \\\\ \\hline \n "
 
-    s += "\end{tabular}\n"
+    s += "\\end{tabular}\n"
 
     return s
 
@@ -194,7 +194,7 @@ class Presentation(object):
         subprocess.run("code " + str(self.filepath), shell=True)
 
     def format_content(self, text):
-        """
+        r"""
         Formats text content so it appears as a bulleted list if \item is in the text.
         """
         if text.strip()[0:5] == r"\item":
@@ -343,7 +343,7 @@ class Presentation(object):
                     row_data += "\n" + text
                 else:
                     if item is None:
-                        row_data += "\n\t\end{minipage} \\\\ "
+                        row_data += "\n\t\\end{minipage} \\\\ "
                         col_data += row_data
                         continue
 
@@ -385,16 +385,16 @@ class Presentation(object):
                         else f"height={h_row:.2f}in"
                     )
 
-                    row_data += f"\n\t\centering \includegraphics[{im_dim_str}]{{{relative_path}}}"
+                    row_data += f"\n\t\\centering \\includegraphics[{im_dim_str}]{{{relative_path}}}"
 
-                row_data += "\n\t\end{minipage}"
+                row_data += "\n\t\\end{minipage}"
 
                 if j < (len(col) - 1) and not np.all(col[j + 1 :] == None):
                     row_data += " \\\\ "
 
                 col_data += row_data
 
-            col_data += "\n\end{minipage}"
+            col_data += "\n\\end{minipage}"
             slide_data += col_data
 
         return slide_data

@@ -7,3 +7,4 @@ __pycache__
 /texenv.egg-info
 *.gz
 archive
+*.pdf
