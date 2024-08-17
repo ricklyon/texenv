@@ -23,7 +23,7 @@ To create a standalone TeX installation visible only to the current environment,
 ```bash
 texenv init
 ```
-This installs a bare-bones version of LaTeX in `.venv/tex` and modifies the environment activation scripts so this TeX installation is used instead of the base installation. The console needs to be closed and re-opened for the changes to take effect.
+This installs a bare-bones version of LaTeX in `.venv/tex`.
 
 ## Usage
 
@@ -32,9 +32,19 @@ To install packages into the TeX environment,
 texenv install <package name>
 ```
 
+The package name refers to the TeXLive package name, which is often different than the package name in [CTAN](https://ctan.org/). To find the TeXLive package name, search for the package on CTAN and find the "Contained in" section. The package name will be listed next to "TeXLive as".   
+For example,  
+![ctan-example](https://raw.githubusercontent.com/ricklyon/texenv/main/docs/img/texlive_ctan.png)
+
+
 To write all currently installed TeX packages in the environment to a file (excluding core packages required for LaTeX to run),
 ```bash
 texenv freeze > texrequirements.txt
+```
+
+Or to print to the console:
+```bash
+texenv list
 ```
 
 To synchronize the TeX installation with the packages found in a requirements file,
@@ -175,6 +185,23 @@ Full example:
     "latex-workshop.view.pdf.internal.synctex.keybinding": "double-click",
     "latex-workshop.latex.autoBuild.run": "onSave",
 ```
+
+## Troubleshooting
+
+`texenv` installs lightweight version of LaTeX into the virtual environment (equivalent to the "basic" TeXLive distribution). Most packages and fonts will need to be installed after the environment is initialized. A couple of useful TeXLive packages that will solve a lot of missing package errors:
+
+```bash
+texenv install collection-latexrecommended
+texenv install collection-fontsrecommended
+```
+
+`texenv` includes a parser for the rather verbose pdflatex log files, and attempts to show only the relevant error messages. For example, 
+```
+RuntimeError: pdfTEX Error on line: 9. LaTeX Error: File `hyphenat.sty' not found.
+Emergency stop.
+```
+
+A link to the full log file is also included below the error message.
 
 ## License
 
