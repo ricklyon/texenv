@@ -1,6 +1,6 @@
 # texenv
 
-Create lightweight TeX virtual environments, and use Python methods directly from TeX code. 
+Create lightweight TeX virtual environments, and use Python methods in TeX code. 
 
 ## Installation
 
