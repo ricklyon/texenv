@@ -154,11 +154,12 @@ Full example:
 
 ## VSCode Setup
 
-`texenv` is designed to work with the Latex Workshop extension in VSCode. The following settings in `settings.json` should configure `texenv` to run on .tex files when they are saved. Note that this feature only works when VSCode is opened as a workspace.
+`texenv` is designed to work with the Latex Workshop extension in VSCode. The following settings in `settings.json` should configure `texenv` on Unix platforms. Note that the "build on save" feature only works when VSCode is opened as a workspace.
 
 ```json
     "[latex]": {
         "editor.formatOnSave": false,
+        "editor.wordWrap": "on"
     },
     "latex-workshop.latex.recipes": [
         {
@@ -177,13 +178,24 @@ Full example:
             "%DOC_EXT%"
         ],
         "env": {
-            "Path": "%WORKSPACE_FOLDER%/.venv/tex/bin/windows;%WORKSPACE_FOLDER%/.venv/Scripts;%PATH%",
+            "PATH": "%WORKSPACE_FOLDER%/.venv/tex/bin/x86_64-linux:%WORKSPACE_FOLDER%/.venv/bin:%PATH%",
             "VIRTUAL_ENV": "%WORKSPACE_FOLDER%/.venv"
         }
         }
     ],
     "latex-workshop.view.pdf.internal.synctex.keybinding": "double-click",
     "latex-workshop.latex.autoBuild.run": "onSave",
+    "latex-workshop.latex.autoClean.run": "never",
+```
+
+If the Unix platform is not `x86_64-linux`, change the `PATH` to match the platform. 
+
+On Windows, change `env` under `"latex-workshop.latex.tools"` to:
+```json
+"env": {
+    "Path": "%WORKSPACE_FOLDER%/.venv/tex/bin/windows;%WORKSPACE_FOLDER%/.venv/Scripts;%PATH%",
+    "VIRTUAL_ENV": "%WORKSPACE_FOLDER%/.venv"
+}
 ```
 
 ## Troubleshooting
