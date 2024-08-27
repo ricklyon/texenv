@@ -93,8 +93,7 @@ def texenv_init(prompt=".venv"):
 
     cwd = Path(os.environ["VIRTUAL_ENV"])
 
-    texpath_base = get_base_texpath()
-    texpath_env = get_env_texpath()
+    texpath_base, _ = get_base_texpath()
 
     print(f"Found system TeXLive installation at: {texpath_base}")
 
@@ -142,6 +141,8 @@ def texenv_init(prompt=".venv"):
         texpath_base / "texmf-var", newtexpath / "texmf-var", dirs_exist_ok=True
     )
 
+    texpath_env = get_env_texpath()
+
     # update tlmgr inside the environment
     print(f"Updating TexLive package manager (tlmgr)...")
     subprocess.run(
@@ -176,36 +177,64 @@ def parse_pdflatex_error(output):
 
 def get_base_texpath():
     """
-    Returns the TeXLive installation directory on windows
+    Returns the base TeXLive installation directory.
     """
+    path = os.environ["PATH"]
 
-    texpath = ""
+    # windows Path variable uses backslashes, unix uses forward slashes
     if platform.system() == "Windows":
-        path = os.environ["PATH"]
-
-        texlive_ptn = r".*texlive\\(\d+)\\bin\\windows"
-
-        texpath = [p for p in path.split(";") if re.match(texlive_ptn, p)]
-
-        # texlive installations are sorted by year, get the most recent install
-        texpath = sorted(texpath, key=lambda x: re.match(texlive_ptn, x).group(1))[-1]
-
+        texlive_ptn = r".*texlive\\(\d+)\\bin\\(.*)"
+        path_delimiter = ";"
     elif platform.system() == "Linux":
-        texpath = r"/usr/local/texlive/2024/bin/x86_64-linux"
-
-    if not len(texpath):
-        raise RuntimeError("TeXLive installation not found!")
+        texlive_ptn = r".*texlive/(\d+)/bin/(.*)"
+        path_delimiter = ":"
     else:
-        texpath = (Path(texpath) / "../../").resolve()
+        raise RuntimeError(f"Platform not supported: {platform.system()}.")
 
-    return texpath
+    texpath_all = [p for p in path.split(path_delimiter) if re.match(texlive_ptn, p)]
+
+    if not len(texpath_all):
+        raise RuntimeError("TeXLive installation not found!")
+
+    # texlive installations are organized by year, get the most recent install
+    texpath_latest = sorted(
+        texpath_all, key=lambda x: re.match(texlive_ptn, x).group(1)
+    )[-1]
+    # return the top level directory for texlive
+    texpath_top = (Path(texpath_latest) / "../../").resolve()
+    # return the texlive platform string
+    tl_platform = Path(texpath_latest).name
+
+    return texpath_top, tl_platform
 
 
 def get_env_texpath():
-    if platform.system() == "Windows":
-        return Path(os.environ["VIRTUAL_ENV"]) / r"tex/bin/windows"
+    """
+    Returns the venv TeXLive installation directory.
+    """
+    # usually the virtual env path should be in the env variables
+    if "VIRTUAL_ENV" in os.environ.keys():
+        # get the platform from the base path
+        _, tl_platform = get_base_texpath()
+        return Path(os.environ["VIRTUAL_ENV"]) / f"tex/bin/{tl_platform}"
+
+    # if it's not in the env variables, it should be in the PATH env variable.
     else:
-        return Path(os.environ["VIRTUAL_ENV"]) / r"tex/bin/x86_64-linux"
+        path = os.environ["PATH"]
+
+        texlive_ptn_env = ".+/.venv/tex/bin/(.+)"
+        path_delimiter = ";" if platform.system() == "Windows" else ":"
+
+        texpath_all = [
+            p for p in path.split(path_delimiter) if re.match(texlive_ptn_env, p)
+        ]
+
+        if not len(texpath_all):
+            raise RuntimeError(
+                "TeXLive installation not found in virtual environment. Did you run texenv init?"
+            )
+
+        return Path(texpath_all[0])
 
 
 def tlpdb_parse(pdb_path: Path):
