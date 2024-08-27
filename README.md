@@ -199,7 +199,7 @@ On Windows, change `env` under `"latex-workshop.latex.tools"` to:
 
 ## Troubleshooting
 
-Even the full TexLive distribution is installed on the system, `texenv` installs a lightweight version of LaTeX into the virtual environment (equivalent to the "basic" TeXLive distribution). Most packages and fonts will need to be installed after the environment is initialized. A couple of useful TeXLive packages that will solve a lot of missing package errors:
+Even if the full TexLive distribution is installed on the system, `texenv` installs a lightweight version of LaTeX into the virtual environment (equivalent to the "basic" TeXLive distribution). Most packages and fonts will need to be installed after the environment is initialized. A couple of useful TeXLive packages that will solve a lot of missing package errors:
 
 ```bash
 texenv install collection-latexrecommended
