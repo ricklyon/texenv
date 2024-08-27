@@ -4,6 +4,7 @@ import os
 import re
 import shutil
 from PIL import Image
+import platform
 from . import packages
 
 
@@ -50,17 +51,21 @@ def sync_from_file(filepath):
     with open(filepath, "r") as f:
         all_pkgs = f.read().split("\n")
         # filter out base packages if they somehow made it onto the file
-        pkgs = [pkg.strip() for pkg in all_pkgs if pkg not in packages.install_pkgs]
+        pkgs = [
+            pkg.strip()
+            for pkg in all_pkgs
+            if pkg not in packages.install_pkgs[platform.system()]
+        ]
 
     if "VIRTUAL_ENV" not in dict(os.environ).keys():
         raise RuntimeError(
             "This command must be run from a virtual environment. To create one use: python -m venv .venv"
         )
 
-    texpath = get_env_texpath() / "tlmgr.bat"
+    tlmgr = get_env_texpath() / "tlmgr"
 
     with subprocess.Popen(
-        f"{texpath} install " + " ".join(pkgs),
+        f"{tlmgr} install " + " ".join(pkgs),
         shell=True,
         stdin=subprocess.PIPE,
         stdout=subprocess.PIPE,
@@ -88,9 +93,9 @@ def texenv_init(prompt=".venv"):
 
     cwd = Path(os.environ["VIRTUAL_ENV"])
 
-    texpath = get_base_texpath()
+    texpath_base, _ = get_base_texpath()
 
-    print(f"Found system TeXLive installation at: {texpath}")
+    print(f"Found system TeXLive installation at: {texpath_base}")
 
     # copy tex binaries to venv folder
     newtexpath = cwd / "tex"
@@ -105,47 +110,48 @@ def texenv_init(prompt=".venv"):
         else:
             raise RuntimeError(f"TeX installation already exists at {newtexpath}")
 
-    pdb_home = texpath / "tlpkg/texlive.tlpdb"
+    pdb_home = texpath_base / "tlpkg/texlive.tlpdb"
     pdb_dest = newtexpath / "tlpkg/texlive.tlpdb"
 
     print(f"Setting up TeX environment...")
     pkg_listings, pkg_files = tlpdb_parse(pdb_home)
 
     # install packages
-    for k in packages.install_pkgs:
+    for k in packages.install_pkgs[platform.system()]:
         if k not in pkg_files:
             raise RuntimeError(
                 f'package {k} not found in base TeXLive installation. Ensure at least the "basic" TeXLive scheme is installed on the system.'
             )
 
-        for v in pkg_files[k]["runfiles"]:
+        for v in pkg_files[k]["binfiles"] + pkg_files[k]["runfiles"]:
             os.makedirs((newtexpath / v).parent, exist_ok=True)
-            shutil.copy(texpath / v, newtexpath / v)
-        for v in pkg_files[k]["binfiles"]:
-            os.makedirs((newtexpath / v).parent, exist_ok=True)
-            shutil.copy(texpath / v, newtexpath / v)
+            try:
+                shutil.copy(texpath_base / v, newtexpath / v)
+            except IsADirectoryError:
+                shutil.copytree(texpath_base / v, newtexpath / v, dirs_exist_ok=True)
 
     with open(pdb_dest, "w+") as f:
-        for k in packages.install_pkgs:
+        for k in packages.install_pkgs[platform.system()]:
             f.write(f"name {k}\n" + pkg_listings[k] + "\n")
 
     os.makedirs(newtexpath / "tlpkg/backups", exist_ok=True)
 
-    shutil.copy(texpath / "texmf-dist/ls-R", newtexpath / "texmf-dist/ls-R")
-    shutil.copytree(texpath / "texmf-var", newtexpath / "texmf-var")
+    shutil.copy(texpath_base / "texmf-dist/ls-R", newtexpath / "texmf-dist/ls-R")
+    shutil.copytree(
+        texpath_base / "texmf-var", newtexpath / "texmf-var", dirs_exist_ok=True
+    )
+
+    texpath_env = get_env_texpath()
 
     # update tlmgr inside the environment
     print(f"Updating TexLive package manager (tlmgr)...")
     subprocess.run(
-        f"{newtexpath}\\bin\\windows\\tlmgr.bat update --self", stdout=subprocess.PIPE
+        f"{texpath_env}/tlmgr update --self", stdout=subprocess.PIPE, shell=True
     )
 
     print("Installing packages from pkg_files/slides.txt...")
     slide_file = Path(__file__).parent / "pkg_files/slides.txt"
     sync_from_file(slide_file)
-
-    # changing PATH within python will not affect the parent session
-    # subprocess.run(str(cwd / "Scripts/activate.bat"))
 
 
 def parse_pdflatex_error(output):
@@ -171,27 +177,64 @@ def parse_pdflatex_error(output):
 
 def get_base_texpath():
     """
-    Returns the TeXLive installation directory on windows
+    Returns the base TeXLive installation directory.
     """
     path = os.environ["PATH"]
 
-    texlive_ptn = r".*texlive\\(\d+)\\bin\\windows"
-
-    texpath = [p for p in path.split(";") if re.match(texlive_ptn, p)]
-
-    # texlive installations are sorted by year, get the most recent install
-    texpath = sorted(texpath, key=lambda x: re.match(texlive_ptn, x).group(1))[-1]
-
-    if not len(texpath):
-        raise RuntimeError("TeXLive installation not found!")
+    # windows Path variable uses backslashes, unix uses forward slashes
+    if platform.system() == "Windows":
+        texlive_ptn = r".*texlive\\(\d+)\\bin\\(.*)"
+        path_delimiter = ";"
+    elif platform.system() == "Linux":
+        texlive_ptn = r".*texlive/(\d+)/bin/(.*)"
+        path_delimiter = ":"
     else:
-        texpath = (Path(texpath) / "../../").resolve()
+        raise RuntimeError(f"Platform not supported: {platform.system()}.")
 
-    return texpath
+    texpath_all = [p for p in path.split(path_delimiter) if re.match(texlive_ptn, p)]
+
+    if not len(texpath_all):
+        raise RuntimeError("TeXLive installation not found!")
+
+    # texlive installations are organized by year, get the most recent install
+    texpath_latest = sorted(
+        texpath_all, key=lambda x: re.match(texlive_ptn, x).group(1)
+    )[-1]
+    # return the top level directory for texlive
+    texpath_top = (Path(texpath_latest) / "../../").resolve()
+    # return the texlive platform string
+    tl_platform = Path(texpath_latest).name
+
+    return texpath_top, tl_platform
 
 
 def get_env_texpath():
-    return Path(os.environ["VIRTUAL_ENV"]) / r"tex/bin/windows"
+    """
+    Returns the venv TeXLive installation directory.
+    """
+    # usually the virtual env path should be in the env variables
+    if "VIRTUAL_ENV" in os.environ.keys():
+        # get the platform from the base path
+        _, tl_platform = get_base_texpath()
+        return Path(os.environ["VIRTUAL_ENV"]) / f"tex/bin/{tl_platform}"
+
+    # if it's not in the env variables, it should be in the PATH env variable.
+    else:
+        path = os.environ["PATH"]
+
+        texlive_ptn_env = ".+/.venv/tex/bin/(.+)"
+        path_delimiter = ";" if platform.system() == "Windows" else ":"
+
+        texpath_all = [
+            p for p in path.split(path_delimiter) if re.match(texlive_ptn_env, p)
+        ]
+
+        if not len(texpath_all):
+            raise RuntimeError(
+                "TeXLive installation not found in virtual environment. Did you run texenv init?"
+            )
+
+        return Path(texpath_all[0])
 
 
 def tlpdb_parse(pdb_path: Path):

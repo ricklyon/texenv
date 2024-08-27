@@ -4,7 +4,7 @@ import click
 import gzip
 import re
 from pathlib import Path
-import os
+import platform
 
 from texenv import TeXPreprocessor, utils, packages
 
@@ -14,16 +14,19 @@ from texenv import TeXPreprocessor, utils, packages
 @click.argument("filepath", required=False)
 @click.option("--prompt", default=".venv")
 def cli(command, filepath=None, prompt=None):
+
+    texpath = utils.get_env_texpath()
+    tlmgr = texpath / "tlmgr"
+    platform_str = platform.system()
+
     if command == "init":
         utils.texenv_init(prompt)
         print("TeX environement setup complete.")
 
     elif command == "freeze" or command == "list":
 
-        texpath = utils.get_env_texpath() / "tlmgr.bat"
-
         proc = subprocess.run(
-            f"{texpath} list --only-installed", stdout=subprocess.PIPE, shell=True
+            f"{tlmgr} list --only-installed", stdout=subprocess.PIPE, shell=True
         )
 
         # parse list of installed packages
@@ -33,7 +36,9 @@ def cli(command, filepath=None, prompt=None):
             if ":" in ln
         ]
         # filter all packages that are installed with texenv_init
-        pkgs = [pkg for pkg in all_pkgs if pkg not in packages.install_pkgs]
+        pkgs = [
+            pkg for pkg in all_pkgs if pkg not in packages.install_pkgs[platform_str]
+        ]
 
         if filepath is not None:
             filepath = Path(filepath).resolve()
@@ -57,10 +62,8 @@ def cli(command, filepath=None, prompt=None):
             click.echo("package name argument required.")
             return
 
-        texpath = utils.get_env_texpath() / "tlmgr.bat"
-
         with subprocess.Popen(
-            f"{texpath} install " + filepath,
+            f"{tlmgr} install " + filepath,
             shell=True,
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
@@ -83,10 +86,11 @@ def cli(command, filepath=None, prompt=None):
         texpath = utils.get_env_texpath()
 
         proc = subprocess.run(
-            '{}//pdflatex.exe --synctex=1 --interaction=nonstopmode --halt-on-error --output-directory="{}" {}'.format(
+            '{}//pdflatex --synctex=1 --interaction=nonstopmode --halt-on-error --output-directory="{}" {}'.format(
                 texpath, build_dir, outfile
             ),
             stdout=subprocess.PIPE,
+            shell=True,
         )
 
         if proc.returncode:
@@ -149,4 +153,3 @@ def cli(command, filepath=None, prompt=None):
             shutil.copyfile(gen_pdf, out_pdf)
 
         print("Output PDF written to {}".format(out_pdf))
-    # out = subprocess.run("\"C:/Program Files/SumatraPDF/SumatraPDF-3.4.6-64.exe\" \"{}\" -inverse-search \"\"C:/ProgramData/Notepad++/notepad++.exe\" -n%l \"%f\"\"".format(out_pdf), shell=True)

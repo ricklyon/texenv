@@ -4,11 +4,12 @@ Create lightweight TeX virtual environments, and use Python methods in TeX code.
 
 ## Installation
 
-`texenv` is currently only supported on Windows, and requires `texlive` to be installed on the system.  
-https://tug.org/texlive/windows.html#install  
-Ensure at least the "basic" TeXLive scheme is selected during installation.
+`texenv` requires `texlive` to be installed on the system. Follow the reccommended install steps here:  
+https://www.tug.org/texlive/quickinstall.html
 
-`texenv` requires an existing Python virtual environment, create one with the following command,
+Ensure at least the "basic" TeXLive scheme is selected during installation. On linux, the "basic" scheme can be installed by using the `--scheme=basic` option in the install script. On Windows, the option is under the "Advanced Options" button in the installer. 
+
+`texenv` also requires an existing Python virtual environment, create one with the following command,
 ```bash
 python -m venv .venv
 ```
@@ -154,11 +155,12 @@ Full example:
 
 ## VSCode Setup
 
-`texenv` is designed to work with the Latex Workshop extension in VSCode. The following settings in `settings.json` should configure `texenv` to run on .tex files when they are saved. Note that this feature only works when VSCode is opened as a workspace.
+`texenv` is designed to work with the Latex Workshop extension in VSCode. The following settings in `settings.json` should configure `texenv` on Unix platforms. Note that the "build on save" feature only works when VSCode is opened as a workspace.
 
 ```json
     "[latex]": {
         "editor.formatOnSave": false,
+        "editor.wordWrap": "on"
     },
     "latex-workshop.latex.recipes": [
         {
@@ -177,18 +179,27 @@ Full example:
             "%DOC_EXT%"
         ],
         "env": {
-            "Path": "%WORKSPACE_FOLDER%/.venv/tex/bin/windows;%WORKSPACE_FOLDER%/.venv/Scripts;%PATH%",
-            "VIRTUAL_ENV": "%WORKSPACE_FOLDER%/.venv"
+            "PATH": "%WORKSPACE_FOLDER%/.venv/tex/bin/x86_64-linux:%WORKSPACE_FOLDER%/.venv/bin"
         }
         }
     ],
     "latex-workshop.view.pdf.internal.synctex.keybinding": "double-click",
     "latex-workshop.latex.autoBuild.run": "onSave",
+    "latex-workshop.latex.autoClean.run": "never",
+```
+
+If the Unix platform is not `x86_64-linux`, change the `PATH` to match the platform. 
+
+On Windows, change `env` under `"latex-workshop.latex.tools"` to:
+```json
+"env": {
+    "Path": "%WORKSPACE_FOLDER%/.venv/tex/bin/windows;%WORKSPACE_FOLDER%/.venv/Scripts"
+}
 ```
 
 ## Troubleshooting
 
-`texenv` installs lightweight version of LaTeX into the virtual environment (equivalent to the "basic" TeXLive distribution). Most packages and fonts will need to be installed after the environment is initialized. A couple of useful TeXLive packages that will solve a lot of missing package errors:
+Even if the full TexLive distribution is installed on the system, `texenv` installs a lightweight version of LaTeX into the virtual environment (equivalent to the "basic" TeXLive distribution). Most packages and fonts will need to be installed after the environment is initialized. A couple of useful TeXLive packages that will solve a lot of missing package errors:
 
 ```bash
 texenv install collection-latexrecommended

@@ -158,11 +158,12 @@ class Presentation(object):
 
         # generate PDF by running pdflatex
         proc = subprocess.run(
-            "{}//pdflatex.exe --interaction=nonstopmode --halt-on-error {}".format(
+            "{}//pdflatex --interaction=nonstopmode --halt-on-error {}".format(
                 texpath, self.filepath.stem + ".tex"
             ),
             stdout=subprocess.PIPE,
             cwd=self.build_dir,
+            shell=True,
         )
 
         if proc.returncode:
