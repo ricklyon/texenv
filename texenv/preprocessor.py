@@ -68,10 +68,16 @@ class TeXPreprocessor(object):
         if stream is None:
             stream = self._in_stream
 
-        ch = stream.read(1).decode("utf-8")
-        if ch == "\n" and stream == self._in_stream:
+        ch = stream.read(1)
+
+        try:
+            ch_str = ch.decode("utf-8")
+        except:
+            raise SyntaxError(f"Unable to decode character {ch} on line {self._input_line_num}")
+
+        if ch_str == "\n" and stream == self._in_stream:
             self._input_line_num += 1
-        return ch
+        return ch_str
 
     def advance_if(self, condition: Callable, stream=None):
         """
